@@ -1,0 +1,40 @@
+# 依赖
+node_modules/
+.pnpm-store/
+
+# 构建与测试产物
+*.tsbuildinfo
+coverage/
+dist/
+.tmp/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+
+# 编辑器与 IDE
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+
+# 操作系统
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# 本地环境
+.env
+.env.*
+!.env.example
+.envrc
+
+# 本地打包 / 临时文件
+*.tgz
+*.tar.gz
+tmp/
+temp/
