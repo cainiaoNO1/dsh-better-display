@@ -8,8 +8,10 @@ import css from './Reader.module.css';
 const EASING = 'cubic-bezier(.22,1,.36,1)';
 
 /** One real transcript: reference transform while following, native scroll while reading. */
-export function ReasoningCard({ children, step, active, motion, selected, onRead, translationText = '', translationLive = false, translationSettings = TRANSLATION_OFF, original = false, onToggleOriginal }: {
+export function ReasoningCard({ children, step, active, motion, selected, onRead, autoFollow = true, translationText = '', translationLive = false, translationSettings = TRANSLATION_OFF, original = false, onToggleOriginal }: {
   children: ReactNode; step: number; active: boolean; motion: boolean; selected: boolean; onRead: () => void;
+  /** 全局「自动跟随」开关；关掉后卡片停住，由用户自己滚。 */
+  autoFollow?: boolean;
   /** 这段思考的纯文本，翻译用；与 children 同源。 */
   translationText?: string;
   /** 这段思考此刻是否仍在输出；只有正在输出才翻译，历史记录一律不翻。 */
@@ -32,7 +34,7 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
   const previousExpanded = useRef(expanded);
   const stopFollow = useRef<() => void>(() => {});
   const { paused = false } = useContext(StreamMotionContext);
-  const allowed = following && active && motion && !selected && !paused;
+  const allowed = autoFollow && following && active && motion && !selected && !paused;
   const translation = useReasoningTranslation(translationSettings, translationText, translationLive);
 
   const pause = useCallback(() => {

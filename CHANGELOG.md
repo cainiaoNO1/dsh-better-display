@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.8 — 2026-10-22
+
+- Move the reader controls into a toolbar group at the top right: auto-fold, auto-expand, auto-translate and auto-follow sit side by side as pill switches. They write to the root `dsh.reader.v1` store, so they apply to every session and survive a reload.
+- Add **auto-expand**, which overrides auto-fold while it is on: folding keeps being recorded, but the current turn's process stays open.
+- Add **auto-follow**, which gates the reasoning card's follow behaviour globally instead of per card.
+- Add **auto-translate** next to them, so translation can be toggled while reading instead of only from Settings. The two new switches also appear in Settings, and both places write the same state.
+
 ## 0.3.7 — 2026-10-22
 
 - Add opt-in Chinese translation for reasoning cards. Pick a fixed provider/model in Settings; English reasoning is translated host-side and shown in place, with a per-card toggle back to the original. Default off — every translation is one extra model call.

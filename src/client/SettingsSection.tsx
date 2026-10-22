@@ -16,6 +16,8 @@ export interface ReaderPrefsSnapshot {
   translatorModel?: string;
   translatorPrompt?: string;
   reasoningOriginal?: boolean;
+  autoExpand?: boolean;
+  autoFollow?: boolean;
 }
 
 export interface OpenPrefs {
@@ -30,6 +32,8 @@ export interface OpenPrefs {
     setTranslatorRoute?: (route: { provider: string; model: string }) => void;
     setTranslatorPrompt?: (value: string) => void;
     setReasoningOriginal?: (value: boolean) => void;
+    setAutoExpand?: (value: boolean) => void;
+    setAutoFollow?: (value: boolean) => void;
   };
 }
 
@@ -95,6 +99,8 @@ export function SettingsSection(props: SettingsProps) {
   const translatorProvider = snap.translatorProvider ?? '';
   const translatorModel = snap.translatorModel ?? '';
   const translatorPrompt = snap.translatorPrompt ?? '';
+  const autoExpand = snap.autoExpand === true;
+  const autoFollow = snap.autoFollow !== false;
   // 输入框保持本地状态：每次按键都写 store 会让整棵树重渲染，中文输入法还容易丢字。
   const [promptDraft, setPromptDraft] = useState(translatorPrompt);
   useEffect(() => { setPromptDraft(translatorPrompt); }, [translatorPrompt]);
@@ -189,6 +195,38 @@ export function SettingsSection(props: SettingsProps) {
             props.prefs.actions.setAutoFold?.(!autoFold);
             props.prefs.actions.setFoldIntensity?.(!autoFold ? 1 : 0);
           }}
+        />
+      </div>
+
+      <div className={css.row}>
+        <div className={css.rowText}>
+          <div className={css.title}>{text(props, copy, 'autoExpandTitle')}</div>
+          <div className={css.desc}>{text(props, copy, 'autoExpandDescription')}</div>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={autoExpand}
+          className={css.switch}
+          data-on={autoExpand || undefined}
+          data-better-display-auto-expand={autoExpand ? 'on' : 'off'}
+          onClick={() => { props.prefs.actions.setAutoExpand?.(!autoExpand); }}
+        />
+      </div>
+
+      <div className={css.row}>
+        <div className={css.rowText}>
+          <div className={css.title}>{text(props, copy, 'autoFollowTitle')}</div>
+          <div className={css.desc}>{text(props, copy, 'autoFollowDescription')}</div>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={autoFollow}
+          className={css.switch}
+          data-on={autoFollow || undefined}
+          data-better-display-auto-follow={autoFollow ? 'on' : 'off'}
+          onClick={() => { props.prefs.actions.setAutoFollow?.(!autoFollow); }}
         />
       </div>
 

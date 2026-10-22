@@ -39,6 +39,10 @@ export interface ReaderState {
   reasoningOriginal: boolean;
   /** 每次翻译追加到系统提示词后的自定义要求。 */
   translatorPrompt: string;
+  /** 过程内容默认展开：即使开着自动折叠，也把当前轮次的过程摊开。 */
+  autoExpand: boolean;
+  /** 思考卡片自动跟随最新文字；关掉后停在当前位置由你自己滚。 */
+  autoFollow: boolean;
 }
 type ReaderActions = {
   setExpanded: (draft: ReaderState, key: string, value: boolean) => void;
@@ -52,6 +56,8 @@ type ReaderActions = {
   setTranslatorRoute: (draft: ReaderState, route: TranslatorRoute) => void;
   setReasoningOriginal: (draft: ReaderState, value: boolean) => void;
   setTranslatorPrompt: (draft: ReaderState, value: string) => void;
+  setAutoExpand: (draft: ReaderState, value: boolean) => void;
+  setAutoFollow: (draft: ReaderState, value: boolean) => void;
 };
 
 function applyFoldIntensity(draft: ReaderState, value: FoldIntensity): void {
@@ -75,6 +81,8 @@ export function createReaderStore(): EngineStoreHandle<ReaderState, ReaderAction
       translatorModel: '',
       reasoningOriginal: false,
       translatorPrompt: '',
+      autoExpand: false,
+      autoFollow: true,
     }),
     persist: 'dsh.reader.v1',
     actions: {
@@ -96,6 +104,8 @@ export function createReaderStore(): EngineStoreHandle<ReaderState, ReaderAction
       },
       setReasoningOriginal: (draft, value: boolean) => { draft.reasoningOriginal = value; },
       setTranslatorPrompt: (draft, value: string) => { draft.translatorPrompt = value; },
+      setAutoExpand: (draft, value: boolean) => { draft.autoExpand = value; },
+      setAutoFollow: (draft, value: boolean) => { draft.autoFollow = value; },
     },
   });
 }

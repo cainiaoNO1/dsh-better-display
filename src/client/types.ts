@@ -51,6 +51,8 @@ export interface ReaderInjected {
       translatorModel?: string;
       translatorPrompt?: string;
       reasoningOriginal?: boolean;
+      autoExpand?: boolean;
+      autoFollow?: boolean;
     };
     subscribe: (fn: () => void) => () => void;
     actions?: {
@@ -62,6 +64,8 @@ export interface ReaderInjected {
       setTranslatorRoute?: (route: { provider: string; model: string }) => void;
       setReasoningOriginal?: (value: boolean) => void;
       setTranslatorPrompt?: (value: string) => void;
+      setAutoExpand?: (value: boolean) => void;
+      setAutoFollow?: (value: boolean) => void;
     };
   };
   /** Reveal and highlight a workspace file in macOS Finder or Windows Explorer. */
@@ -91,6 +95,8 @@ export type BlockRenderProps = Pick<ReaderProps, 'renderSlotChain' | 'loadImage'
   reasoningOriginal?: boolean;
   /** 在原文与译文之间切换。 */
   toggleReasoningOriginal?: () => void;
+  /** 全局「自动跟随」开关。 */
+  autoFollow?: boolean;
   metrics?: {
     usage?: NonNullable<import('@deepseek-ai/dsh-client-ui-chat/client').TurnTailChatData['tokenUsage']>;
     runMs?: number;

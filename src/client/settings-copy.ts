@@ -9,6 +9,10 @@ export type SettingsCopyKey =
   | 'foldNone'
   | 'foldStandard'
   | 'foldSummary'
+  | 'autoExpandTitle'
+  | 'autoExpandDescription'
+  | 'autoFollowTitle'
+  | 'autoFollowDescription'
   | 'translateTitle'
   | 'translateDescription'
   | 'translateRoute'
@@ -40,6 +44,10 @@ export const en: SettingsCopy = {
   foldNone: 'Off',
   foldStandard: 'On',
   foldSummary: 'Summary',
+  autoExpandTitle: 'Always expand process content',
+  autoExpandDescription: 'Overrides auto-fold: the process of the current turn stays open. The toolbar switch does the same thing.',
+  autoFollowTitle: 'Auto-follow reasoning',
+  autoFollowDescription: 'Reasoning cards scroll to the newest text. Turn off to hold the current position and scroll yourself.',
   translateTitle: 'Translate reasoning into Chinese',
   translateDescription: 'Off by default: each translation is one extra model call. Turn this on and pick a fixed model below; English reasoning is then shown in Chinese, with a toggle back to the original on every card.',
   translateRoute: 'Translation model',
@@ -70,6 +78,10 @@ export const zh: SettingsCopy = {
   foldNone: '关闭',
   foldStandard: '开启',
   foldSummary: '摘要',
+  autoExpandTitle: '过程内容始终展开',
+  autoExpandDescription: '压过自动折叠：当前轮次的过程保持摊开。右上角工具栏的开关效果相同。',
+  autoFollowTitle: '思考自动跟随',
+  autoFollowDescription: '思考卡片自动滚到最新文字。关闭后停在当前位置，由你自己滚。',
   translateTitle: '把思考翻译成中文',
   translateDescription: '默认关闭：每次翻译都是一次额外的模型调用。打开后在下方选定一个固定模型，英文思考会以中文显示；每张卡片上都有按钮切回原文。',
   translateRoute: '翻译模型',

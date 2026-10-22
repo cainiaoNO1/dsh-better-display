@@ -28,6 +28,7 @@ import { ClosedProcessSummary } from './ClosedProcessSummary.js';
 import { StickyLane } from './StickyLane.js';
 import type { ReaderGroup, TurnBoundary } from './projection.js';
 import type { BlockRenderProps, ReaderProps } from './types.js';
+import { ReaderToolbar, useReaderToolbar } from './ReaderToolbar.js';
 import css from './Reader.module.css';
 import { markdownLabels, truncatedJsonLabel } from './primitive-labels.js';
 
@@ -161,7 +162,7 @@ const AssistantNode = memo(function AssistantNode({ useChat, nodeKey, boundary, 
     const last = index === parts.length - 1;
     return part.kind === 'reasoning'
     ? <ProcessFragment key={part.start} open={processOpen} motion={motion} onRead={onRead} returnFocusTo={returnFocusTo} nodeKey={nodeKey} framed>
-      <ReasoningCard step={data.step} active={processOpen && boundary.status === 'open' && data.step === boundary.latestStep} motion={motion} selected={pinned} onRead={onRead}
+      <ReasoningCard step={data.step} active={processOpen && boundary.status === 'open' && data.step === boundary.latestStep} motion={motion} selected={pinned} onRead={onRead} autoFollow={render.autoFollow !== false}
         translationText={part.blocks.filter(block => block.kind === 'reasoning').map(block => block.text).join('\n\n')}
         translationLive={data.status === 'running' && last && data.blocks.at(-1)?.kind === 'reasoning'}
         translationSettings={render.translationSettings} original={render.reasoningOriginal} onToggleOriginal={render.toggleReasoningOriginal}>
@@ -475,7 +476,7 @@ function DeliverablesRow({ deliverables, openFile, revealFile, openMode }: {
   );
 }
 
-const TurnGroup = memo(function TurnGroup({ group, motion, autoFold, pinnedKeys, selectedProcessKeys, isAwaitingModel = false, translationSettings, reasoningOriginal, toggleReasoningOriginal, ...props }: ReaderProps & { group: ReaderGroup; motion: boolean; autoFold: boolean; pinnedKeys: readonly string[]; selectedProcessKeys: readonly string[]; isAwaitingModel?: boolean; translationSettings?: BlockRenderProps['translationSettings']; reasoningOriginal?: boolean; toggleReasoningOriginal?: () => void }) {
+const TurnGroup = memo(function TurnGroup({ group, motion, autoFold, autoExpand = false, autoFollow = true, pinnedKeys, selectedProcessKeys, isAwaitingModel = false, translationSettings, reasoningOriginal, toggleReasoningOriginal, ...props }: ReaderProps & { group: ReaderGroup; motion: boolean; autoFold: boolean; autoExpand?: boolean; autoFollow?: boolean; pinnedKeys: readonly string[]; selectedProcessKeys: readonly string[]; isAwaitingModel?: boolean; translationSettings?: BlockRenderProps['translationSettings']; reasoningOriginal?: boolean; toggleReasoningOriginal?: () => void }) {
   const snapshot = props.useChat(snapshot => snapshot);
   const nodes = snapshot.nodes;
   const turn = group.turn === null ? undefined : snapshot.timeline.turns.get(group.turn);
@@ -507,7 +508,8 @@ const TurnGroup = memo(function TurnGroup({ group, motion, autoFold, pinnedKeys,
     || liveItems.some(item => item.kind === 'fold'
       ? item.key === key || item.steps.some(step => step.key === key || ('nodeKey' in step && step.nodeKey === key))
       : item.key === key || ('nodeKey' in item.step && item.step.nodeKey === key)));
-  const expanded = !autoFold || holdingSelection || processExpanded(expansionChoice, boundary);
+  // 自动展开压过自动折叠：折叠照常记录，但过程内容始终摊开。
+  const expanded = !autoFold || autoExpand || holdingSelection || processExpanded(expansionChoice, boundary);
   const [foldOpenByKey, setFoldOpenByKey] = useState<Record<string, boolean>>({});
   useLayoutEffect(() => {
     // Restoring automatic folding also releases live "prior steps" disclosures.
@@ -570,6 +572,7 @@ const TurnGroup = memo(function TurnGroup({ group, motion, autoFold, pinnedKeys,
     translationSettings,
     reasoningOriginal,
     toggleReasoningOriginal,
+    autoFollow,
   };
   const terminal = terminalLabel(boundary.reason);
   const hasTurnError = flow.some(item => item.kind === 'node' && nodes.get(item.nodeKey)?.kind === 'turn-error');
@@ -656,6 +659,11 @@ export function Reader(props: ReaderProps) {
     if (restored) props.actions.resetExpanded();
   }, [autoFold, props.actions]);
   const frostedGlass = frostedGlassOf(prefsSnap);
+  const toggleAutoFold = useCallback((value: boolean) => {
+    props.actions.setAutoFold(value);
+    props.openPrefs?.actions?.setAutoFold?.(value);
+  }, [props.actions, props.openPrefs]);
+  const { toolbar } = useReaderToolbar(props, autoFold, toggleAutoFold);
   const translation = useMemo(() => ({
     enabled: prefsSnap?.translateReasoning === true,
     provider: prefsSnap?.translatorProvider ?? '',
@@ -835,18 +843,7 @@ export function Reader(props: ReaderProps) {
     <TimelineRail items={timelineItems} activeTurn={activeTurn} busyTurn={busyTurn} onNavigate={onNavigateTurn} />
     <div className={css.column} data-chat-flow="">
       <StickyLane kind="toolbar" className={css.toolbar}>
-        <button
-          type="button"
-          className={css.textButton}
-          aria-pressed={autoFold}
-          onClick={() => {
-            props.actions.setAutoFold(!autoFold);
-            props.openPrefs?.actions?.setAutoFold?.(!autoFold);
-          }}
-          title="新思考产生时，是否自动将此前步骤收拢为一行汇总。关闭后完整保留原始过程与流式输出。"
-        >
-          {`自动折叠${autoFold ? '开' : '关'}`}
-        </button>
+        <ReaderToolbar {...toolbar} />
       </StickyLane>
       {hasMore && <button type="button" className={css.historyButton} disabled={loadingOlder} onClick={async () => {
         setHistoryError(false);
@@ -855,7 +852,7 @@ export function Reader(props: ReaderProps) {
       {historyError && <div className={css.notice}>历史记录加载失败，可再次尝试；现有内容未改变。</div>}
       {openError && <div className={css.error} role="alert">会话暂时无法读取：{openError.message}</div>}
       {loading && groups.length === 0 && <p className={css.empty} role="status">正在读取会话…</p>}
-      {groups.map(group => <TurnGroup key={group.key} {...props} group={group} motion={motion} autoFold={autoFold} pinnedKeys={pinnedKeys} selectedProcessKeys={selectedProcessKeys} isAwaitingModel={isAwaitingModel && group.key === groups.at(-1)?.key} translationSettings={translation} reasoningOriginal={translation.showOriginal} toggleReasoningOriginal={toggleReasoningOriginal} />)}
+      {groups.map(group => <TurnGroup key={group.key} {...props} group={group} motion={motion} autoFold={autoFold} pinnedKeys={pinnedKeys} selectedProcessKeys={selectedProcessKeys} isAwaitingModel={isAwaitingModel && group.key === groups.at(-1)?.key} translationSettings={translation} reasoningOriginal={translation.showOriginal} toggleReasoningOriginal={toggleReasoningOriginal} autoExpand={toolbar.autoExpand} autoFollow={toolbar.autoFollow} />)}
       {visibleSubmissions.map(submission => {
         const images = pendingSubmissionImages(submission);
         return (
