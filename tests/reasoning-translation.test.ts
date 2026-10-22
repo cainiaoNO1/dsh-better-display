@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import {
   REASONING_TRANSLATION_MAX_CHARS,
   clearTranslationCache,
+  clipForTranslation,
   needsTranslation,
   shouldTranslate,
   translationCacheKey,
@@ -57,4 +58,11 @@ test('shouldTranslate only fires for reasoning that is or was on screen live', (
   assert.equal(shouldTranslate({ ...base, model: '', live: true, everLive: true }), false);
   // 中文原文 → 不翻。
   assert.equal(shouldTranslate({ ...base, text: '让我先读一下这个文件再决定怎么改', live: true, everLive: true }), false);
+});
+
+test('clipForTranslation respects custom maxChars', () => {
+  const text = 'abcdefghij'.repeat(2000); // 20,000 chars
+  assert.equal(clipForTranslation(text, 5000).length, 5000);
+  assert.equal(clipForTranslation(text, 25000).length, 20000);
+  assert.equal(clipForTranslation(text).length, REASONING_TRANSLATION_MAX_CHARS);
 });

@@ -37,10 +37,12 @@ type ReasoningChunk =
   | { type: 'finish'; reason: { kind: string } }
   | { type: string };
 
-/** 单次翻译的输入上限；超过就截断，避免把整轮思考灌进一次请求。 */
+/** 单次翻译的输入默认上限；超过就截断，避免把整轮思考灌进一次请求。 */
 export const TRANSLATION_MAX_INPUT_CHARS = 12000;
-/** 输出预算。译文长度通常与原文同量级，中文更短。 */
-export const TRANSLATION_MAX_OUTPUT_TOKENS = 4096;
+/** 用户在设置里允许放大的绝对安全上限。 */
+export const TRANSLATION_HARD_MAX_CHARS = 100000;
+/** 输出预算上限。译文长度通常与原文同量级，中文更短。 */
+export const TRANSLATION_MAX_OUTPUT_TOKENS = 8192;
 /** 单次翻译超时。 */
 export const TRANSLATION_TIMEOUT_MS = 90_000;
 
@@ -72,7 +74,7 @@ export function buildSystemPrompt(extra?: string): string {
 }
 
 /** 校验并收敛一次翻译请求的入参。 */
-export function readTranslationRequest(body: unknown): { text: string; route: TranslationRoute; prompt: string } | { error: string } {
+export function readTranslationRequest(body: unknown): { text: string; route: TranslationRoute; prompt: string; maxChars?: number } | { error: string } {
   const data = body && typeof body === 'object' ? body as Record<string, unknown> : {};
   const text = typeof data.text === 'string' ? data.text : '';
   if (!text.trim()) return { error: '思考内容为空' };
@@ -80,10 +82,14 @@ export function readTranslationRequest(body: unknown): { text: string; route: Tr
   const model = typeof data.model === 'string' ? data.model.trim() : '';
   if (!provider || !model) return { error: '未选择翻译模型' };
   const prompt = typeof data.prompt === 'string' ? data.prompt : '';
+  const requestedMax = typeof data.maxChars === 'number' && Number.isFinite(data.maxChars) && data.maxChars > 0
+    ? Math.min(Math.floor(data.maxChars), TRANSLATION_HARD_MAX_CHARS)
+    : TRANSLATION_MAX_INPUT_CHARS;
   return {
-    text: text.length > TRANSLATION_MAX_INPUT_CHARS ? text.slice(0, TRANSLATION_MAX_INPUT_CHARS) : text,
+    text: text.length > requestedMax ? text.slice(0, requestedMax) : text,
     route: { provider, model },
     prompt: prompt.length > TRANSLATION_MAX_PROMPT_CHARS ? prompt.slice(0, TRANSLATION_MAX_PROMPT_CHARS) : prompt,
+    maxChars: requestedMax,
   };
 }
 
@@ -125,8 +131,12 @@ export async function translateReasoning(
   const onAbort = () => { controller.abort(outer?.reason); };
   outer?.addEventListener('abort', onAbort, { once: true });
   try {
+    const maxTokens = Math.min(
+      TRANSLATION_MAX_OUTPUT_TOKENS,
+      Math.max(4096, Math.ceil(input.text.length / 2)),
+    );
     const call = await llm.prepareCall(
-      { ...input.route, maxTokens: TRANSLATION_MAX_OUTPUT_TOKENS },
+      { ...input.route, maxTokens },
       controller.signal,
     );
     const messages = [{ role: 'user', content: [{ type: 'text', text: input.text }] }];
@@ -134,7 +144,7 @@ export async function translateReasoning(
       ...call.config,
       messages,
       system: buildSystemPrompt(input.prompt),
-      maxTokens: TRANSLATION_MAX_OUTPUT_TOKENS,
+      maxTokens,
       signal: controller.signal,
     });
     const { text, finish, failure } = await collectText(stream, controller.signal);

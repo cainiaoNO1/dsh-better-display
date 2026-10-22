@@ -7,6 +7,8 @@ export interface TranslationSettings {
   model: string;
   /** 附加到每次翻译系统提示词之后的用户自定义要求。 */
   prompt?: string;
+  /** 单次翻译截取的字符上限。默认 12000。 */
+  maxChars?: number;
 }
 
 export const TRANSLATION_OFF: TranslationSettings = { enabled: false, provider: '', model: '' };
@@ -114,7 +116,13 @@ async function requestTranslation(
   const response = await fetch('/better-display/translate-reasoning', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, provider: settings.provider, model: settings.model, prompt: settings.prompt ?? '' }),
+    body: JSON.stringify({
+      text,
+      provider: settings.provider,
+      model: settings.model,
+      prompt: settings.prompt ?? '',
+      maxChars: settings.maxChars,
+    }),
     signal,
   });
   const payload = await response.json().catch(() => undefined) as
@@ -149,15 +157,15 @@ export function useReasoningTranslation(
   live: boolean,
 ): TranslationState {
   const [state, setState] = useState<TranslationState>({ status: 'off' });
-  const { enabled, provider, model, prompt = '' } = settings;
+  const { enabled, provider, model, prompt = '', maxChars = REASONING_TRANSLATION_MAX_CHARS } = settings;
   /** 这张卡片是否曾经「正在输出」；一上来就是历史记录的卡片永远为假。 */
   const everLive = useRef(false);
   if (live) everLive.current = true;
   const translatable = shouldTranslate({ enabled, provider, model, text, live, everLive: everLive.current });
 
   // 异步回调需要读到「此刻」的输入，才能判断结果是否已经过期。
-  const latest = useRef({ text, translatable, live, enabled, provider, model, prompt });
-  latest.current = { text, translatable, live, enabled, provider, model, prompt };
+  const latest = useRef({ text, translatable, live, enabled, provider, model, prompt, maxChars });
+  latest.current = { text, translatable, live, enabled, provider, model, prompt, maxChars };
 
   /** 在途请求；同一时刻最多一个，避免并发把配额打满。 */
   const inFlight = useRef<{ controller: AbortController; clipped: string } | undefined>(undefined);
@@ -177,7 +185,7 @@ export function useReasoningTranslation(
       setState({ status: 'off' });
       return;
     }
-    const clipped = clipForTranslation(now.text);
+    const clipped = clipForTranslation(now.text, now.maxChars);
     const partial = clipped.length < now.text.length;
     // 这段文本已经有译文了：直接显示，不必再发请求。
     const done = settled.current;
@@ -219,14 +227,14 @@ export function useReasoningTranslation(
     void (async () => {
       try {
         const translated = await requestTranslation(
-          { enabled: now.enabled, provider: now.provider, model: now.model, prompt: now.prompt },
+          { enabled: now.enabled, provider: now.provider, model: now.model, prompt: now.prompt, maxChars: now.maxChars },
           clipped,
           controller.signal,
         );
         remember(key, translated);
         inFlight.current = undefined;
         // 只有文本没在这期间继续变长，这次译文才算「当前」的。
-        if (clipForTranslation(latest.current.text) === clipped) {
+        if (clipForTranslation(latest.current.text, now.maxChars) === clipped) {
           settled.current = { clipped, translated, partial };
           setState({ status: 'done', text: translated, partial });
         }
@@ -248,7 +256,7 @@ export function useReasoningTranslation(
   // 文本 / 活跃状态变化只是「催一下」，不会中止在途请求。
   useEffect(() => { pump(); }, [pump, translatable, live, text]);
 
-  // 换模型、改提示词、开关功能：旧译文作废，在途请求取消。
+  // 换模型、改提示词、改上限、开关功能：旧译文作废，在途请求取消。
   useEffect(() => {
     settled.current = undefined;
     lastSentClipped.current = '';
@@ -261,7 +269,7 @@ export function useReasoningTranslation(
     inFlight.current?.controller.abort();
     inFlight.current = undefined;
     pumpRef.current();
-  }, [enabled, provider, model, prompt]);
+  }, [enabled, provider, model, prompt, maxChars]);
 
   // 卸载（切走会话、卡片被折叠掉）时收尾，别让模型白跑。
   useEffect(() => () => {
@@ -274,9 +282,10 @@ export function useReasoningTranslation(
 }
 
 /** 超出上限的思考只翻前一段；完整原文仍然原样可读。 */
-function clipForTranslation(text: string): string {
-  return text.length > REASONING_TRANSLATION_MAX_CHARS
-    ? text.slice(0, REASONING_TRANSLATION_MAX_CHARS)
+export function clipForTranslation(text: string, maxChars = REASONING_TRANSLATION_MAX_CHARS): string {
+  const cap = typeof maxChars === 'number' && maxChars > 0 ? maxChars : REASONING_TRANSLATION_MAX_CHARS;
+  return text.length > cap
+    ? text.slice(0, cap)
     : text;
 }
 

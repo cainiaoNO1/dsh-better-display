@@ -15,6 +15,7 @@ export interface ReaderPrefsSnapshot {
   translatorProvider?: string;
   translatorModel?: string;
   translatorPrompt?: string;
+  translatorMaxChars?: number;
   reasoningOriginal?: boolean;
   autoExpand?: boolean;
   autoFollow?: boolean;
@@ -31,6 +32,7 @@ export interface OpenPrefs {
     setTranslateReasoning?: (value: boolean) => void;
     setTranslatorRoute?: (route: { provider: string; model: string }) => void;
     setTranslatorPrompt?: (value: string) => void;
+    setTranslatorMaxChars?: (value: number) => void;
     setReasoningOriginal?: (value: boolean) => void;
     setAutoExpand?: (value: boolean) => void;
     setAutoFollow?: (value: boolean) => void;
@@ -99,11 +101,14 @@ export function SettingsSection(props: SettingsProps) {
   const translatorProvider = snap.translatorProvider ?? '';
   const translatorModel = snap.translatorModel ?? '';
   const translatorPrompt = snap.translatorPrompt ?? '';
+  const translatorMaxChars = snap.translatorMaxChars ?? 12000;
   const autoExpand = snap.autoExpand === true;
   const autoFollow = snap.autoFollow !== false;
   // 输入框保持本地状态：每次按键都写 store 会让整棵树重渲染，中文输入法还容易丢字。
   const [promptDraft, setPromptDraft] = useState(translatorPrompt);
   useEffect(() => { setPromptDraft(translatorPrompt); }, [translatorPrompt]);
+  const [maxCharsDraft, setMaxCharsDraft] = useState(String(translatorMaxChars));
+  useEffect(() => { setMaxCharsDraft(String(translatorMaxChars)); }, [translatorMaxChars]);
 
   const loadRoutes = useCallback(async () => {
     setLoadingRoutes(true);
@@ -299,6 +304,57 @@ export function SettingsSection(props: SettingsProps) {
                 if (promptDraft !== translatorPrompt) props.prefs.actions.setTranslatorPrompt?.(promptDraft);
               }}
             />
+          </div>
+        )}
+        {translateOn && (
+          <div className={css.maxCharsRow} data-better-display-translate-max-chars>
+            <div className={css.maxCharsHeader}>
+              <label className={css.promptLabel} htmlFor="better-display-translate-max-chars">
+                {text(props, copy, 'translateMaxCharsTitle')}
+              </label>
+              <div className={css.desc}>{text(props, copy, 'translateMaxCharsDescription')}</div>
+            </div>
+            <div className={css.maxCharsInputRow}>
+              <div className={css.numberWrapper}>
+                <input
+                  id="better-display-translate-max-chars"
+                  type="number"
+                  min={1000}
+                  max={100000}
+                  step={1000}
+                  className={css.numberInput}
+                  value={maxCharsDraft}
+                  onChange={event => { setMaxCharsDraft(event.target.value); }}
+                  onBlur={event => {
+                    const parsed = parseInt(event.target.value, 10);
+                    const valid = Number.isFinite(parsed) && parsed >= 1000 ? Math.min(100000, parsed) : 12000;
+                    setMaxCharsDraft(String(valid));
+                    if (valid !== translatorMaxChars) {
+                      props.prefs.actions.setTranslatorMaxChars?.(valid);
+                    }
+                  }}
+                />
+                <span className={css.numberUnit}>字符</span>
+              </div>
+              <div className={css.presets}>
+                {[6000, 12000, 25000, 50000].map(val => (
+                  <button
+                    key={val}
+                    type="button"
+                    className={css.presetButton}
+                    data-active={parseInt(maxCharsDraft, 10) === val || undefined}
+                    onClick={() => {
+                      setMaxCharsDraft(String(val));
+                      if (val !== translatorMaxChars) {
+                        props.prefs.actions.setTranslatorMaxChars?.(val);
+                      }
+                    }}
+                  >
+                    {val === 12000 ? `${val} (默认)` : val}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </section>

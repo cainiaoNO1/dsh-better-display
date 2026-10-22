@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  TRANSLATION_HARD_MAX_CHARS,
   TRANSLATION_MAX_INPUT_CHARS,
   TRANSLATION_MAX_PROMPT_CHARS,
   buildSystemPrompt,
@@ -156,4 +157,18 @@ test('readTranslationRequest carries the prompt through and clips it', () => {
   });
   assert.ok('prompt' in long);
   assert.equal(long.prompt.length, TRANSLATION_MAX_PROMPT_CHARS);
+});
+
+test('readTranslationRequest honours custom maxChars within hard limit', () => {
+  const text = 'a'.repeat(30000);
+  const result = readTranslationRequest({ text, provider: 'p', model: 'm', maxChars: 25000 });
+  assert.ok('text' in result);
+  assert.equal(result.text.length, 25000);
+  assert.equal(result.maxChars, 25000);
+
+  // Exceeding hard max clamps to TRANSLATION_HARD_MAX_CHARS
+  const hugeText = 'a'.repeat(TRANSLATION_HARD_MAX_CHARS + 5000);
+  const clamped = readTranslationRequest({ text: hugeText, provider: 'p', model: 'm', maxChars: 200000 });
+  assert.ok('text' in clamped);
+  assert.equal(clamped.text.length, TRANSLATION_HARD_MAX_CHARS);
 });

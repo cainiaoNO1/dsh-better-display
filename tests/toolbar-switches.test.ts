@@ -64,3 +64,10 @@ test('settings panel mirrors the two new switches', () => {
   assert.match(section, /setAutoExpand/);
   assert.match(section, /setAutoFollow/);
 });
+
+test('settings panel exposes maxChars configuration and presets', () => {
+  const section = readFileSync(resolve(root, 'src/client/SettingsSection.tsx'), 'utf8');
+  assert.match(section, /data-better-display-translate-max-chars/);
+  assert.match(section, /setTranslatorMaxChars/);
+  assert.match(section, /6000.*12000.*25000.*50000/s);
+});

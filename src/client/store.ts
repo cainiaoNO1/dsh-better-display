@@ -39,6 +39,8 @@ export interface ReaderState {
   reasoningOriginal: boolean;
   /** 每次翻译追加到系统提示词后的自定义要求。 */
   translatorPrompt: string;
+  /** 单次思考翻译的输入字符上限；超出部分截断为前半段。默认 12000。 */
+  translatorMaxChars: number;
   /** 过程内容默认展开：即使开着自动折叠，也把当前轮次的过程摊开。 */
   autoExpand: boolean;
   /** 思考卡片自动跟随最新文字；关掉后停在当前位置由你自己滚。 */
@@ -56,6 +58,7 @@ type ReaderActions = {
   setTranslatorRoute: (draft: ReaderState, route: TranslatorRoute) => void;
   setReasoningOriginal: (draft: ReaderState, value: boolean) => void;
   setTranslatorPrompt: (draft: ReaderState, value: string) => void;
+  setTranslatorMaxChars: (draft: ReaderState, value: number) => void;
   setAutoExpand: (draft: ReaderState, value: boolean) => void;
   setAutoFollow: (draft: ReaderState, value: boolean) => void;
 };
@@ -81,6 +84,7 @@ export function createReaderStore(): EngineStoreHandle<ReaderState, ReaderAction
       translatorModel: '',
       reasoningOriginal: false,
       translatorPrompt: '',
+      translatorMaxChars: 12000,
       autoExpand: false,
       autoFollow: true,
     }),
@@ -104,6 +108,7 @@ export function createReaderStore(): EngineStoreHandle<ReaderState, ReaderAction
       },
       setReasoningOriginal: (draft, value: boolean) => { draft.reasoningOriginal = value; },
       setTranslatorPrompt: (draft, value: string) => { draft.translatorPrompt = value; },
+      setTranslatorMaxChars: (draft, value: number) => { draft.translatorMaxChars = value; },
       setAutoExpand: (draft, value: boolean) => { draft.autoExpand = value; },
       setAutoFollow: (draft, value: boolean) => { draft.autoFollow = value; },
     },

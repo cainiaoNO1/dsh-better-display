@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.10 — 2026-10-23
+
+- Add configurable character limit for reasoning translation in Settings → Better Display.
+- Includes a direct number input and quick preset buttons (`6000`, `12000 (默认)`, `25000`, `50000`).
+- Persists to `dsh.reader.v1` store across sessions and page reloads.
+- Host and client now honour custom input caps up to 100,000 characters, and automatically scale output tokens up to 8192.
+
 ## 0.3.9 — 2026-10-22
 
 - Move the switch group out of the reader body and portal it into the conversation tabs row, so it shares a line with 阅读 / 对话 / 轨迹 and no longer competes with other plugins that render into `conversation.session.header.corner`.

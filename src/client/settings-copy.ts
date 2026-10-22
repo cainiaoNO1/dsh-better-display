@@ -18,6 +18,8 @@ export type SettingsCopyKey =
   | 'translateRoute'
   | 'translatePrompt'
   | 'translatePromptPlaceholder'
+  | 'translateMaxCharsTitle'
+  | 'translateMaxCharsDescription'
   | 'translateNoModels'
   | 'translateLoadFailed'
   | 'translateReload'
@@ -53,6 +55,8 @@ export const en: SettingsCopy = {
   translateRoute: 'Translation model',
   translatePrompt: 'Extra instructions (optional)',
   translatePromptPlaceholder: 'Appended to every translation call, e.g. keep tool names in English, use concise wording.',
+  translateMaxCharsTitle: 'Max characters per translation',
+  translateMaxCharsDescription: 'Reasoning longer than this is clipped to the first segment to save tokens and prevent timeouts. Default: 12,000.',
   translateNoModels: 'No model route is available. Check that a provider is configured in the host.',
   translateLoadFailed: 'Could not read the model list from the host.',
   translateReload: 'Reload',
@@ -87,6 +91,8 @@ export const zh: SettingsCopy = {
   translateRoute: '翻译模型',
   translatePrompt: '附加提示词（可选）',
   translatePromptPlaceholder: '每次翻译都会加进模型调用，例如：保留工具名英文、用简洁的中文表达。',
+  translateMaxCharsTitle: '单次翻译字数上限',
+  translateMaxCharsDescription: '思考超出此字数时仅截取前半段翻译，避免消耗过多 Token 或请求超时。默认 12000 字符。',
   translateNoModels: '宿主没有可用的模型路由。请确认已在宿主里配置好 provider。',
   translateLoadFailed: '无法从宿主读取模型列表。',
   translateReload: '重新加载',

@@ -671,8 +671,9 @@ export function Reader(props: ReaderProps) {
     provider: prefsSnap?.translatorProvider ?? '',
     model: prefsSnap?.translatorModel ?? '',
     prompt: prefsSnap?.translatorPrompt ?? '',
+    maxChars: prefsSnap?.translatorMaxChars ?? 12000,
     showOriginal: prefsSnap?.reasoningOriginal === true,
-  }), [prefsSnap?.translateReasoning, prefsSnap?.translatorProvider, prefsSnap?.translatorModel, prefsSnap?.translatorPrompt, prefsSnap?.reasoningOriginal]);
+  }), [prefsSnap?.translateReasoning, prefsSnap?.translatorProvider, prefsSnap?.translatorModel, prefsSnap?.translatorPrompt, prefsSnap?.translatorMaxChars, prefsSnap?.reasoningOriginal]);
   const toggleReasoningOriginal = useCallback(() => {
     props.openPrefs?.actions?.setReasoningOriginal?.(!translation.showOriginal);
   }, [props.openPrefs, translation.showOriginal]);

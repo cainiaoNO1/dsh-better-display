@@ -50,6 +50,7 @@ export interface ReaderInjected {
       translatorProvider?: string;
       translatorModel?: string;
       translatorPrompt?: string;
+      translatorMaxChars?: number;
       reasoningOriginal?: boolean;
       autoExpand?: boolean;
       autoFollow?: boolean;
@@ -64,6 +65,7 @@ export interface ReaderInjected {
       setTranslatorRoute?: (route: { provider: string; model: string }) => void;
       setReasoningOriginal?: (value: boolean) => void;
       setTranslatorPrompt?: (value: string) => void;
+      setTranslatorMaxChars?: (value: number) => void;
       setAutoExpand?: (value: boolean) => void;
       setAutoFollow?: (value: boolean) => void;
     };
@@ -90,7 +92,7 @@ export type BlockRenderProps = Pick<ReaderProps, 'renderSlotChain' | 'loadImage'
   forkSeq?: number;
   fileMentions?: MarkdownFileMentions;
   /** 思考翻译的目标模型与附加提示词；缺省或空路由表示不翻译。 */
-  translationSettings?: { enabled: boolean; provider: string; model: string; prompt?: string };
+  translationSettings?: { enabled: boolean; provider: string; model: string; prompt?: string; maxChars?: number };
   /** 思考卡片当前显示原文而不是译文。 */
   reasoningOriginal?: boolean;
   /** 在原文与译文之间切换。 */
