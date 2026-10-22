@@ -9,6 +9,14 @@ export type SettingsCopyKey =
   | 'foldNone'
   | 'foldStandard'
   | 'foldSummary'
+  | 'translateTitle'
+  | 'translateDescription'
+  | 'translateRoute'
+  | 'translatePrompt'
+  | 'translatePromptPlaceholder'
+  | 'translateNoModels'
+  | 'translateLoadFailed'
+  | 'translateReload'
   | 'skillTitle'
   | 'skillInstalled'
   | 'skillMissing'
@@ -32,6 +40,14 @@ export const en: SettingsCopy = {
   foldNone: 'Off',
   foldStandard: 'On',
   foldSummary: 'Summary',
+  translateTitle: 'Translate reasoning into Chinese',
+  translateDescription: 'Off by default: each translation is one extra model call. Turn this on and pick a fixed model below; English reasoning is then shown in Chinese, with a toggle back to the original on every card.',
+  translateRoute: 'Translation model',
+  translatePrompt: 'Extra instructions (optional)',
+  translatePromptPlaceholder: 'Appended to every translation call, e.g. keep tool names in English, use concise wording.',
+  translateNoModels: 'No model route is available. Check that a provider is configured in the host.',
+  translateLoadFailed: 'Could not read the model list from the host.',
+  translateReload: 'Reload',
   skillTitle: 'generative-mcpapps skill',
   skillInstalled: 'Installed',
   skillMissing: 'Not detected',
@@ -54,6 +70,14 @@ export const zh: SettingsCopy = {
   foldNone: '关闭',
   foldStandard: '开启',
   foldSummary: '摘要',
+  translateTitle: '把思考翻译成中文',
+  translateDescription: '默认关闭：每次翻译都是一次额外的模型调用。打开后在下方选定一个固定模型，英文思考会以中文显示；每张卡片上都有按钮切回原文。',
+  translateRoute: '翻译模型',
+  translatePrompt: '附加提示词（可选）',
+  translatePromptPlaceholder: '每次翻译都会加进模型调用，例如：保留工具名英文、用简洁的中文表达。',
+  translateNoModels: '宿主没有可用的模型路由。请确认已在宿主里配置好 provider。',
+  translateLoadFailed: '无法从宿主读取模型列表。',
+  translateReload: '重新加载',
   skillTitle: 'generative-mcpapps 技能',
   skillInstalled: '已安装',
   skillMissing: '未检测到',

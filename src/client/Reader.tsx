@@ -161,7 +161,10 @@ const AssistantNode = memo(function AssistantNode({ useChat, nodeKey, boundary, 
     const last = index === parts.length - 1;
     return part.kind === 'reasoning'
     ? <ProcessFragment key={part.start} open={processOpen} motion={motion} onRead={onRead} returnFocusTo={returnFocusTo} nodeKey={nodeKey} framed>
-      <ReasoningCard step={data.step} active={processOpen && boundary.status === 'open' && data.step === boundary.latestStep} motion={motion} selected={pinned} onRead={onRead}>
+      <ReasoningCard step={data.step} active={processOpen && boundary.status === 'open' && data.step === boundary.latestStep} motion={motion} selected={pinned} onRead={onRead}
+        translationText={part.blocks.filter(block => block.kind === 'reasoning').map(block => block.text).join('\n\n')}
+        translationLive={data.status === 'running' && last && data.blocks.at(-1)?.kind === 'reasoning'}
+        translationSettings={render.translationSettings} original={render.reasoningOriginal} onToggleOriginal={render.toggleReasoningOriginal}>
         <Blocks {...render} blocks={part.blocks} streaming={data.status === 'running' && last && data.blocks.at(-1)?.kind === 'reasoning'}
           holdFormatting={pinned} startedAt={data.time} interrupted={data.status === 'interrupted'} liveText />
       </ReasoningCard>
@@ -472,7 +475,7 @@ function DeliverablesRow({ deliverables, openFile, revealFile, openMode }: {
   );
 }
 
-const TurnGroup = memo(function TurnGroup({ group, motion, autoFold, pinnedKeys, selectedProcessKeys, isAwaitingModel = false, ...props }: ReaderProps & { group: ReaderGroup; motion: boolean; autoFold: boolean; pinnedKeys: readonly string[]; selectedProcessKeys: readonly string[]; isAwaitingModel?: boolean }) {
+const TurnGroup = memo(function TurnGroup({ group, motion, autoFold, pinnedKeys, selectedProcessKeys, isAwaitingModel = false, translationSettings, reasoningOriginal, toggleReasoningOriginal, ...props }: ReaderProps & { group: ReaderGroup; motion: boolean; autoFold: boolean; pinnedKeys: readonly string[]; selectedProcessKeys: readonly string[]; isAwaitingModel?: boolean; translationSettings?: BlockRenderProps['translationSettings']; reasoningOriginal?: boolean; toggleReasoningOriginal?: () => void }) {
   const snapshot = props.useChat(snapshot => snapshot);
   const nodes = snapshot.nodes;
   const turn = group.turn === null ? undefined : snapshot.timeline.turns.get(group.turn);
@@ -564,6 +567,9 @@ const TurnGroup = memo(function TurnGroup({ group, motion, autoFold, pinnedKeys,
     metrics,
     official,
     cwd,
+    translationSettings,
+    reasoningOriginal,
+    toggleReasoningOriginal,
   };
   const terminal = terminalLabel(boundary.reason);
   const hasTurnError = flow.some(item => item.kind === 'node' && nodes.get(item.nodeKey)?.kind === 'turn-error');
@@ -650,6 +656,16 @@ export function Reader(props: ReaderProps) {
     if (restored) props.actions.resetExpanded();
   }, [autoFold, props.actions]);
   const frostedGlass = frostedGlassOf(prefsSnap);
+  const translation = useMemo(() => ({
+    enabled: prefsSnap?.translateReasoning === true,
+    provider: prefsSnap?.translatorProvider ?? '',
+    model: prefsSnap?.translatorModel ?? '',
+    prompt: prefsSnap?.translatorPrompt ?? '',
+    showOriginal: prefsSnap?.reasoningOriginal === true,
+  }), [prefsSnap?.translateReasoning, prefsSnap?.translatorProvider, prefsSnap?.translatorModel, prefsSnap?.translatorPrompt, prefsSnap?.reasoningOriginal]);
+  const toggleReasoningOriginal = useCallback(() => {
+    props.openPrefs?.actions?.setReasoningOriginal?.(!translation.showOriginal);
+  }, [props.openPrefs, translation.showOriginal]);
   const streamMotion = useMemo(() => ({ enabled: motion, activatedAt: activatedAt.current }), [motion]);
   const groups = useMemo(() => groupNodes(order, key => nodes.get(key)), [order, nodes, timeline]);
   const isAwaitingModel = useMemo(() => {
@@ -815,7 +831,7 @@ export function Reader(props: ReaderProps) {
 
   // ChatView publishes data-chat-flow="" on its column. Skins treat a
   // scrollport without that hook as inspect-only and hide [data-composer-seat].
-  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-reader-build="0.3.4" data-dsh-better-display="0.3.4" data-reader-wait-clock-version="input-v1" data-reader-wait-start={waitAnchor.time ?? undefined} data-motion={motion ? 'on' : 'off'} data-reader-glass={frostedGlass || undefined} data-reader-auto-fold={autoFold ? 'on' : 'off'}>
+  return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-reader-build="0.3.7" data-dsh-better-display="0.3.7" data-reader-wait-clock-version="input-v1" data-reader-wait-start={waitAnchor.time ?? undefined} data-motion={motion ? 'on' : 'off'} data-reader-glass={frostedGlass || undefined} data-reader-auto-fold={autoFold ? 'on' : 'off'}>
     <TimelineRail items={timelineItems} activeTurn={activeTurn} busyTurn={busyTurn} onNavigate={onNavigateTurn} />
     <div className={css.column} data-chat-flow="">
       <StickyLane kind="toolbar" className={css.toolbar}>
@@ -839,7 +855,7 @@ export function Reader(props: ReaderProps) {
       {historyError && <div className={css.notice}>历史记录加载失败，可再次尝试；现有内容未改变。</div>}
       {openError && <div className={css.error} role="alert">会话暂时无法读取：{openError.message}</div>}
       {loading && groups.length === 0 && <p className={css.empty} role="status">正在读取会话…</p>}
-      {groups.map(group => <TurnGroup key={group.key} {...props} group={group} motion={motion} autoFold={autoFold} pinnedKeys={pinnedKeys} selectedProcessKeys={selectedProcessKeys} isAwaitingModel={isAwaitingModel && group.key === groups.at(-1)?.key} />)}
+      {groups.map(group => <TurnGroup key={group.key} {...props} group={group} motion={motion} autoFold={autoFold} pinnedKeys={pinnedKeys} selectedProcessKeys={selectedProcessKeys} isAwaitingModel={isAwaitingModel && group.key === groups.at(-1)?.key} translationSettings={translation} reasoningOriginal={translation.showOriginal} toggleReasoningOriginal={toggleReasoningOriginal} />)}
       {visibleSubmissions.map(submission => {
         const images = pendingSubmissionImages(submission);
         return (

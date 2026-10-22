@@ -2,13 +2,22 @@ import { useCallback, useContext, useEffect, useId, useLayoutEffect, useRef, use
 import { StreamMotionContext } from './streaming.js';
 import type { ReactNode } from 'react';
 import { REASON_CHASE_HOLD, REASON_HOLD, REASON_LINES, REASON_STEP, reasoningTarget } from './reasoning-follow.js';
+import { TRANSLATION_OFF, useReasoningTranslation, type TranslationSettings } from './reasoning-translation.js';
 import css from './Reader.module.css';
 
 const EASING = 'cubic-bezier(.22,1,.36,1)';
 
 /** One real transcript: reference transform while following, native scroll while reading. */
-export function ReasoningCard({ children, step, active, motion, selected, onRead }: {
+export function ReasoningCard({ children, step, active, motion, selected, onRead, translationText = '', translationLive = false, translationSettings = TRANSLATION_OFF, original = false, onToggleOriginal }: {
   children: ReactNode; step: number; active: boolean; motion: boolean; selected: boolean; onRead: () => void;
+  /** 这段思考的纯文本，翻译用；与 children 同源。 */
+  translationText?: string;
+  /** 这段思考此刻是否仍在输出；只有正在输出才翻译，历史记录一律不翻。 */
+  translationLive?: boolean;
+  translationSettings?: TranslationSettings;
+  /** 用户显式选择看原文。 */
+  original?: boolean;
+  onToggleOriginal?: () => void;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
@@ -24,6 +33,7 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
   const stopFollow = useRef<() => void>(() => {});
   const { paused = false } = useContext(StreamMotionContext);
   const allowed = following && active && motion && !selected && !paused;
+  const translation = useReasoningTranslation(translationSettings, translationText, translationLive);
 
   const pause = useCallback(() => {
     stopFollow.current();
@@ -276,16 +286,40 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
     setExpanded(value => !value);
   };
 
-  return <div className={css.reasonCard} data-reader-reasoning-card data-reader-anchor data-expanded={expanded} data-following={allowed} data-overflow={overflow} data-ud-motion="reader-reasoning-size">
+  // 译文与原文的取舍：拿到译文且用户没要求看原文时才替换；翻译失败或还在等
+  // 第一次结果时保留原文，读起来不会中断。
+  const translated = translation.status === 'done' ? translation.text : undefined;
+  const showingTranslation = !!translated && !original;
+  const note = showingTranslation
+    ? (translation.status === 'done' && translation.partial ? '译文（仅前半段）' : '译文')
+    : translation.status === 'error' ? `翻译失败：${translation.message}`
+    : translation.status === 'pending' ? '正在翻译…'
+    : '原文';
+
+  return <div className={css.reasonCard} data-reader-reasoning-card data-reader-anchor data-expanded={expanded} data-following={allowed} data-overflow={overflow} data-ud-motion="reader-reasoning-size"
+    data-reasoning-translation={translation.status}>
     <div className={css.reasonHeading} data-reader-reasoning-heading data-ud-check="reasoning-identity">
       <span className={css.reasonLabel} data-reader-reasoning-label>思考</span>
-      <span>步骤 {step}</span>
+      <span className={css.reasonHeadingMeta}>
+        {translation.status !== 'off' && (
+          <button type="button" className={css.reasonHeadingAction} data-reasoning-original-toggle
+            aria-pressed={original} title={original ? '显示中文译文' : '显示原始思考'}
+            onClick={() => { onRead(); onToggleOriginal?.(); }}>
+            {note}
+          </button>
+        )}
+        <span>步骤 {step}</span>
+      </span>
     </div>
     <div ref={viewport} id={controls} className={css.reasonViewport} data-reader-reasoning-scroll data-edges={edges}
       data-ud-motion="reader-reasoning-scroll" role="region" aria-label={`步骤 ${step} 的思考${overflow ? '，可滚动阅读' : ''}`}
       tabIndex={overflow ? 0 : undefined} onPointerDown={pause} onFocus={pause}>
       <div ref={track} className={css.reasonTrack} data-reader-reasoning-track>
-        <div ref={content} className={css.reasonText} data-reader-reasoning-text>{children}</div>
+        <div ref={content} className={css.reasonText} data-reader-reasoning-text>
+          {showingTranslation
+            ? <div className={css.reasonPlain} data-reasoning-translated>{translated}</div>
+            : children}
+        </div>
       </div>
     </div>
     {(overflow || expanded) && <div className={css.reasonFooter} data-ud-check="reasoning-controls">

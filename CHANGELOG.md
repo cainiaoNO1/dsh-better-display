@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.7 — 2026-10-22
+
+- Add opt-in Chinese translation for reasoning cards. Pick a fixed provider/model in Settings; English reasoning is translated host-side and shown in place, with a per-card toggle back to the original. Default off — every translation is one extra model call.
+- Translation runs entirely on the host: the browser POSTs to `/better-display/translate-reasoning` and the host drives a single text-only completion through `ctx.llm`. The new `GET /better-display/translation-models` feeds the Settings picker from the host's registered providers.
+- Skip translation for Chinese-dominant or very short reasoning, and cache results per `provider + model + text hash` so re-rendering never re-bills the same passage.
+- Keep the original text on screen while a translation is pending or failed, so reading is never interrupted by an empty or broken card.
+- Translate only live reasoning: a card is translated when its session is the active one and that reasoning is still being produced. Historical reasoning and inactive sessions (including sub-agent sessions) are never translated, so switching sessions no longer triggers a burst of calls.
+- Add an optional extra-instruction box under the model picker. Its text is appended to every translation call as a final "user requirements (take precedence)" section, capped at 2000 characters, and folded into the cache key so editing it cannot reuse stale translations.
+
 ## 0.3.6 — 2026-10-05
 
 - Keep a running tool's elapsed clock counting from the call's stamped start instead of the moment the row mounted. Switching sessions and back — or even reloading the page mid-run — now continues the count rather than restarting it at zero; draft-only calls remember their first-seen time per call id until they settle.

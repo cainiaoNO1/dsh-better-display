@@ -11,6 +11,11 @@ export interface ReaderPrefsSnapshot {
   foldIntensity?: FoldIntensity;
   autoFold?: boolean;
   processOnly?: boolean;
+  translateReasoning?: boolean;
+  translatorProvider?: string;
+  translatorModel?: string;
+  translatorPrompt?: string;
+  reasoningOriginal?: boolean;
 }
 
 export interface OpenPrefs {
@@ -21,6 +26,10 @@ export interface OpenPrefs {
     setFrostedGlass: (value: boolean) => void;
     setFoldIntensity?: (value: FoldIntensity) => void;
     setAutoFold?: (value: boolean) => void;
+    setTranslateReasoning?: (value: boolean) => void;
+    setTranslatorRoute?: (route: { provider: string; model: string }) => void;
+    setTranslatorPrompt?: (value: string) => void;
+    setReasoningOriginal?: (value: boolean) => void;
   };
 }
 
@@ -29,6 +38,13 @@ export interface BetterDisplaySettingsInjected {
   copy?: SettingsCopy;
   languageTag?: string;
   checkSkill: SkillStatusProbe;
+}
+
+/** 宿主 `/better-display/translation-models` 的响应形状。 */
+interface ModelRoute {
+  id: string;
+  name: string;
+  models: { id: string; name: string }[];
 }
 
 type SettingsProps = BetterDisplaySettingsInjected & {
@@ -71,6 +87,38 @@ export function SettingsSection(props: SettingsProps) {
   const on = mode === 'sidebar';
   const [skill, setSkill] = useState<SkillStatusSnapshot | undefined>();
   const [checking, setChecking] = useState(false);
+  const [routes, setRoutes] = useState<ModelRoute[] | undefined>();
+  const [routeError, setRouteError] = useState<string | undefined>();
+  const [loadingRoutes, setLoadingRoutes] = useState(false);
+
+  const translateOn = snap.translateReasoning === true;
+  const translatorProvider = snap.translatorProvider ?? '';
+  const translatorModel = snap.translatorModel ?? '';
+  const translatorPrompt = snap.translatorPrompt ?? '';
+  // 输入框保持本地状态：每次按键都写 store 会让整棵树重渲染，中文输入法还容易丢字。
+  const [promptDraft, setPromptDraft] = useState(translatorPrompt);
+  useEffect(() => { setPromptDraft(translatorPrompt); }, [translatorPrompt]);
+
+  const loadRoutes = useCallback(async () => {
+    setLoadingRoutes(true);
+    setRouteError(undefined);
+    try {
+      const response = await fetch('/better-display/translation-models');
+      const payload = await response.json() as { ok?: boolean; providers?: ModelRoute[]; error?: string };
+      if (!response.ok || !payload?.ok) throw new Error(payload?.error ?? `HTTP ${response.status}`);
+      setRoutes(payload.providers ?? []);
+    } catch (error) {
+      setRoutes(undefined);
+      setRouteError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setLoadingRoutes(false);
+    }
+  }, []);
+
+  // 只有真的要用翻译时才去问宿主，避免每次打开设置都打一次请求。
+  useEffect(() => {
+    if (translateOn && routes === undefined && !loadingRoutes && !routeError) void loadRoutes();
+  }, [translateOn, routes, loadingRoutes, routeError, loadRoutes]);
 
   const recheck = useCallback(async () => {
     setChecking(true);
@@ -143,6 +191,79 @@ export function SettingsSection(props: SettingsProps) {
           }}
         />
       </div>
+
+      <section className={css.block} data-better-display-translate={translateOn ? 'on' : 'off'}>
+        <div className={css.row}>
+          <div className={css.rowText}>
+            <div className={css.title}>{text(props, copy, 'translateTitle')}</div>
+            <div className={css.desc}>{text(props, copy, 'translateDescription')}</div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={translateOn}
+            className={css.switch}
+            data-on={translateOn || undefined}
+            data-better-display-translate-switch={translateOn ? 'on' : 'off'}
+            onClick={() => { props.prefs.actions.setTranslateReasoning?.(!translateOn); }}
+          />
+        </div>
+        {translateOn && (
+          <div className={css.routeRow} data-better-display-translate-route>
+            <span className={css.routeLabel}>{text(props, copy, 'translateRoute')}</span>
+            <select
+              className={css.select}
+              aria-label={text(props, copy, 'translateRoute')}
+              value={translatorProvider && translatorModel ? `${translatorProvider}\u0000${translatorModel}` : ''}
+              disabled={loadingRoutes || !routes || routes.length === 0}
+              onChange={event => {
+                const [provider = '', model = ''] = event.target.value.split('\u0000');
+                props.prefs.actions.setTranslatorRoute?.({ provider, model });
+              }}
+            >
+              <option value="">—</option>
+              {(routes ?? []).flatMap(route => route.models.length > 0
+                ? route.models.map(model => (
+                  <option key={`${route.id}\u0000${model.id}`} value={`${route.id}\u0000${model.id}`}>
+                    {route.name} · {model.name}
+                  </option>
+                ))
+                : [(
+                  <option key={`${route.id}\u0000`} value={`${route.id}\u0000`} disabled>
+                    {route.name} · 无可用模型
+                  </option>
+                )])}
+            </select>
+            <button type="button" className={css.button} disabled={loadingRoutes} onClick={() => { void loadRoutes(); }}>
+              {loadingRoutes ? text(props, copy, 'skillChecking') : text(props, copy, 'translateReload')}
+            </button>
+            {routeError && <p className={css.desc}>{text(props, copy, 'translateLoadFailed')} {routeError}</p>}
+            {!routeError && routes && routes.every(route => route.models.length === 0) && (
+              <p className={css.desc}>{text(props, copy, 'translateNoModels')}</p>
+            )}
+          </div>
+        )}
+        {translateOn && (
+          <div className={css.promptRow} data-better-display-translate-prompt>
+            <label className={css.promptLabel} htmlFor="better-display-translate-prompt">
+              {text(props, copy, 'translatePrompt')}
+            </label>
+            <textarea
+              id="better-display-translate-prompt"
+              className={css.promptInput}
+              rows={3}
+              spellCheck={false}
+              value={promptDraft}
+              placeholder={text(props, copy, 'translatePromptPlaceholder')}
+              onChange={event => { setPromptDraft(event.target.value); }}
+              // 失焦才落盘：翻译请求依赖它，但没必要每个字符都触发一次 store 更新。
+              onBlur={() => {
+                if (promptDraft !== translatorPrompt) props.prefs.actions.setTranslatorPrompt?.(promptDraft);
+              }}
+            />
+          </div>
+        )}
+      </section>
 
       <section className={css.block} data-better-display-skill={skill?.installed ? 'installed' : 'missing'}>
         <div className={css.title}>{text(props, copy, 'skillTitle')}</div>

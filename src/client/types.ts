@@ -46,6 +46,11 @@ export interface ReaderInjected {
       foldIntensity?: import('./fold-intensity.js').FoldIntensity;
       autoFold?: boolean;
       processOnly?: boolean;
+      translateReasoning?: boolean;
+      translatorProvider?: string;
+      translatorModel?: string;
+      translatorPrompt?: string;
+      reasoningOriginal?: boolean;
     };
     subscribe: (fn: () => void) => () => void;
     actions?: {
@@ -53,6 +58,10 @@ export interface ReaderInjected {
       setAutoFold?: (value: boolean) => void;
       setFrostedGlass?: (value: boolean) => void;
       setDeliverableOpenMode?: (value: import('./open-file.js').DeliverableOpenMode) => void;
+      setTranslateReasoning?: (value: boolean) => void;
+      setTranslatorRoute?: (route: { provider: string; model: string }) => void;
+      setReasoningOriginal?: (value: boolean) => void;
+      setTranslatorPrompt?: (value: string) => void;
     };
   };
   /** Reveal and highlight a workspace file in macOS Finder or Windows Explorer. */
@@ -76,6 +85,12 @@ export type BlockRenderProps = Pick<ReaderProps, 'renderSlotChain' | 'loadImage'
   /** Durable closing-message seq of this turn (turn-tail closing), used as the fork anchor. */
   forkSeq?: number;
   fileMentions?: MarkdownFileMentions;
+  /** 思考翻译的目标模型与附加提示词；缺省或空路由表示不翻译。 */
+  translationSettings?: { enabled: boolean; provider: string; model: string; prompt?: string };
+  /** 思考卡片当前显示原文而不是译文。 */
+  reasoningOriginal?: boolean;
+  /** 在原文与译文之间切换。 */
+  toggleReasoningOriginal?: () => void;
   metrics?: {
     usage?: NonNullable<import('@deepseek-ai/dsh-client-ui-chat/client').TurnTailChatData['tokenUsage']>;
     runMs?: number;

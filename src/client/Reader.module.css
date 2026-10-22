@@ -670,3 +670,9 @@
   background: var(--dsw-alias-bg-module-platform, rgba(127, 127, 127, .1));
   border-color: var(--dsw-alias-border-l2, rgba(127, 127, 127, .28));
 }
+.reasonHeadingMeta { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.reasonHeadingAction { min-height: 20px; padding: 0 4px; border: 0; border-radius: 5px; background: transparent; color: var(--dsw-alias-label-tertiary); font: inherit; font-size: 12px; line-height: 18px; cursor: pointer; max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reasonHeadingAction:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-secondary); }
+.reasonHeadingAction[aria-pressed=true] { color: var(--dsw-alias-label-secondary); }
+.reasonCard[data-reasoning-translation=pending] .reasonHeadingAction { color: var(--dsw-alias-label-tertiary); }
+.reasonCard[data-reasoning-translation=error] .reasonHeadingAction { color: #dc2626; }

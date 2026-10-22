@@ -63,13 +63,23 @@ test('commits compiled lib entries and does not require a prepare script', () =>
   assert.doesNotMatch(clientJs, /submission\.images\.length/);
 });
 
-test('README leads with the official stock one-liner and names pnpm', () => {
-  for (const name of ['README.md', 'README.en.md']) {
-    const text = readFileSync(resolve(root, name), 'utf8');
-    assert.match(text, /dsh plugin --profile web add github:aa2246740\/dsh-better-display/);
-    assert.match(text, /pnpm/);
-    assert.doesNotMatch(text, /activate-new-client/);
-    assert.doesNotMatch(text, /my-plugins/);
-    assert.doesNotMatch(text, /DSHX_HARNESS/);
-  }
+test('README documents the self-maintained build and link install', () => {
+  const text = readFileSync(resolve(root, 'README.md'), 'utf8');
+  assert.match(text, /npm run build/);
+  assert.match(text, /dsh plugin --profile web add link:/);
+  assert.match(text, /esbuild/);
+  assert.match(text, /lightningcss/);
+  assert.doesNotMatch(text, /activate-new-client/);
+  assert.doesNotMatch(text, /DSHX_HARNESS/);
+});
+
+test('compiled client bundle carries the reasoning translation feature', () => {
+  const clientJs = readFileSync(resolve(root, 'lib/client.js'), 'utf8');
+  assert.match(clientJs, /better-display\/translate-reasoning/);
+  assert.match(clientJs, /translateReasoning/);
+  assert.match(clientJs, /setTranslatorRoute/);
+  assert.match(clientJs, /data-reasoning-translation/);
+  const hostJs = readFileSync(resolve(root, 'lib/dsh-better-display.js'), 'utf8');
+  assert.match(hostJs, /better-display\/translate-reasoning/);
+  assert.match(hostJs, /better-display\/translation-models/);
 });
