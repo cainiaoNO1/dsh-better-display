@@ -71,3 +71,10 @@ test('settings panel exposes maxChars configuration and presets', () => {
   assert.match(section, /setTranslatorMaxChars/);
   assert.match(section, /6000.*12000.*25000.*50000/s);
 });
+
+test('reasoning card provides manual translate button when untranslated', () => {
+  const card = readFileSync(resolve(root, 'src/client/ReasoningCard.tsx'), 'utf8');
+  assert.match(card, /data-reasoning-manual-translate/);
+  assert.match(card, /translation\.trigger\(\)/);
+  assert.match(card, /needsTranslation\(translationText\)/);
+});

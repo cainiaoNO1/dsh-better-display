@@ -2,7 +2,7 @@ import { useCallback, useContext, useEffect, useId, useLayoutEffect, useRef, use
 import { StreamMotionContext } from './streaming.js';
 import type { ReactNode } from 'react';
 import { REASON_CHASE_HOLD, REASON_HOLD, REASON_LINES, REASON_STEP, reasoningTarget } from './reasoning-follow.js';
-import { TRANSLATION_OFF, useReasoningTranslation, type TranslationSettings } from './reasoning-translation.js';
+import { TRANSLATION_OFF, needsTranslation, useReasoningTranslation, type TranslationSettings } from './reasoning-translation.js';
 import css from './Reader.module.css';
 
 const EASING = 'cubic-bezier(.22,1,.36,1)';
@@ -299,10 +299,13 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
     setExpanded(value => !value);
   };
 
+  const [localOriginal, setLocalOriginal] = useState<boolean | undefined>(undefined);
+  const effectiveOriginal = localOriginal !== undefined ? localOriginal : original;
+
   // 译文与原文的取舍：拿到译文且用户没要求看原文时才替换；翻译失败或还在等
   // 第一次结果时保留原文，读起来不会中断。
   const translated = translation.status === 'done' ? translation.text : undefined;
-  const showingTranslation = !!translated && !original;
+  const showingTranslation = !!translated && !effectiveOriginal;
   const note = showingTranslation
     ? (translation.status === 'done' && translation.partial ? '译文（仅前半段）' : '译文')
     : translation.status === 'error' ? `翻译失败：${translation.message}`
@@ -314,12 +317,28 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
     <div className={css.reasonHeading} data-reader-reasoning-heading data-ud-check="reasoning-identity">
       <span className={css.reasonLabel} data-reader-reasoning-label>思考</span>
       <span className={css.reasonHeadingMeta}>
-        {translation.status !== 'off' && (
+        {translation.status !== 'off' ? (
           <button type="button" className={css.reasonHeadingAction} data-reasoning-original-toggle
-            aria-pressed={original} title={original ? '显示中文译文' : '显示原始思考'}
-            onClick={() => { onRead(); onToggleOriginal?.(); }}>
+            aria-pressed={effectiveOriginal} title={effectiveOriginal ? '显示中文译文' : '显示原始思考'}
+            onClick={() => {
+              onRead();
+              if (translation.status === 'error') {
+                translation.trigger();
+              } else {
+                setLocalOriginal(v => (v !== undefined ? !v : !original));
+                onToggleOriginal?.();
+              }
+            }}>
             {note}
           </button>
+        ) : (
+          needsTranslation(translationText) && (
+            <button type="button" className={css.reasonHeadingAction} data-reasoning-manual-translate
+              title="将此思考过程翻译为中文"
+              onClick={() => { onRead(); translation.trigger(); }}>
+              翻译
+            </button>
+          )
         )}
         <span>步骤 {step}</span>
       </span>

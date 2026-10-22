@@ -34,6 +34,11 @@ export type TranslationState =
   | { status: 'done'; text: string; partial: boolean }
   | { status: 'error'; message: string; text?: string };
 
+export type TranslationHandle = TranslationState & {
+  /** 手动触发一次翻译（例如用户切到会话前已完成的旧思考卡片）。 */
+  trigger: () => void;
+};
+
 /** FNV-1a 32 位散列，只用来做缓存键。 */
 function hashText(text: string): string {
   let hash = 0x811c9dc5;
@@ -155,17 +160,24 @@ export function useReasoningTranslation(
   settings: TranslationSettings,
   text: string,
   live: boolean,
-): TranslationState {
+): TranslationHandle {
   const [state, setState] = useState<TranslationState>({ status: 'off' });
+  const [manual, setManual] = useState(false);
   const { enabled, provider, model, prompt = '', maxChars = REASONING_TRANSLATION_MAX_CHARS } = settings;
   /** 这张卡片是否曾经「正在输出」；一上来就是历史记录的卡片永远为假。 */
   const everLive = useRef(false);
   if (live) everLive.current = true;
-  const translatable = shouldTranslate({ enabled, provider, model, text, live, everLive: everLive.current });
+  const autoTranslatable = shouldTranslate({ enabled, provider, model, text, live, everLive: everLive.current });
+  const manualTranslatable = manual && needsTranslation(text);
+  const translatable = autoTranslatable || manualTranslatable;
+
+  const trigger = useCallback(() => {
+    setManual(true);
+  }, []);
 
   // 异步回调需要读到「此刻」的输入，才能判断结果是否已经过期。
-  const latest = useRef({ text, translatable, live, enabled, provider, model, prompt, maxChars });
-  latest.current = { text, translatable, live, enabled, provider, model, prompt, maxChars };
+  const latest = useRef({ text, translatable, live, enabled, provider, model, prompt, maxChars, manual });
+  latest.current = { text, translatable, live, enabled, provider, model, prompt, maxChars, manual };
 
   /** 在途请求；同一时刻最多一个，避免并发把配额打满。 */
   const inFlight = useRef<{ controller: AbortController; clipped: string } | undefined>(undefined);
@@ -183,6 +195,14 @@ export function useReasoningTranslation(
       settled.current = undefined;
       lastSentClipped.current = '';
       setState({ status: 'off' });
+      return;
+    }
+    if (!now.provider || !now.model) {
+      if (now.manual) {
+        setState({ status: 'error', message: '未选择翻译模型，请先到设置中选定模型' });
+      } else {
+        setState({ status: 'off' });
+      }
       return;
     }
     const clipped = clipForTranslation(now.text, now.maxChars);
@@ -205,8 +225,8 @@ export function useReasoningTranslation(
     }
     if (clipped === lastSentClipped.current) return;
 
-    // 冷却期没过就排个定时器；输出已结束（!live）时不再等待。
-    const wait = now.live ? Math.max(0, REASONING_TRANSLATION_IDLE_MS - (Date.now() - lastSentAt.current)) : 0;
+    // 冷却期没过就排个定时器；手动触发或输出已结束（!live）时不再等待。
+    const wait = now.live && !now.manual ? Math.max(0, REASONING_TRANSLATION_IDLE_MS - (Date.now() - lastSentAt.current)) : 0;
     if (wait > 0) {
       if (timer.current === undefined) {
         timer.current = setTimeout(() => {
@@ -278,7 +298,10 @@ export function useReasoningTranslation(
     inFlight.current = undefined;
   }, []);
 
-  return state;
+  return {
+    ...state,
+    trigger,
+  };
 }
 
 /** 超出上限的思考只翻前一段；完整原文仍然原样可读。 */

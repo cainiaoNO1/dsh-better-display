@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.11 — 2026-10-23
+
+- Add manual 「翻译」 text button to untranslated English reasoning cards (such as cards generated before switching into the session or historical steps).
+- Clicking 「翻译」 triggers translation on demand without waiting for streaming output, and transitions to 「译文」/「原文」 toggle controls.
+- Allows each card to independently toggle between original text and translated text.
+
 ## 0.3.10 — 2026-10-23
 
 - Add configurable character limit for reasoning translation in Settings → Better Display.
