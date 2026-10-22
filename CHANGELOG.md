@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.9 — 2026-10-22
+
+- Move the switch group out of the reader body and portal it into the conversation tabs row, so it shares a line with 阅读 / 对话 / 轨迹 and no longer competes with other plugins that render into `conversation.session.header.corner`.
+- **Fix auto-expand doing nothing.** It only overrode turn-level folding; the 「展开阅读」 control on each reasoning card is its own local state. Auto-expand now seeds that state and follows the switch, which is what the switch was asked to do.
+- `react-dom` joins the platform externals for the portal, and `verify.mjs` stubs it.
+
 ## 0.3.8 — 2026-10-22
 
 - Move the reader controls into a toolbar group at the top right: auto-fold, auto-expand, auto-translate and auto-follow sit side by side as pill switches. They write to the root `dsh.reader.v1` store, so they apply to every session and survive a reload.

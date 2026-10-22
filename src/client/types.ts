@@ -97,6 +97,8 @@ export type BlockRenderProps = Pick<ReaderProps, 'renderSlotChain' | 'loadImage'
   toggleReasoningOriginal?: () => void;
   /** 全局「自动跟随」开关。 */
   autoFollow?: boolean;
+  /** 全局「自动展开」开关；打开后思考卡片默认就是展开态。 */
+  autoExpand?: boolean;
   metrics?: {
     usage?: NonNullable<import('@deepseek-ai/dsh-client-ui-chat/client').TurnTailChatData['tokenUsage']>;
     runMs?: number;

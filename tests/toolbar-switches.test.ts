@@ -31,6 +31,22 @@ test('toolbar switches are persisted through the root reader store', () => {
   assert.match(store, /autoFollow: true/);
 });
 
+test('toolbar portals into the conversation tabs row', () => {
+  const toolbar = readFileSync(resolve(root, 'src/client/ReaderToolbar.tsx'), 'utf8');
+  // 官方没给 tabs 行声明插槽，只能 portal；锁住这个前提，避免以后静默退回到
+  // 和别的插件抢 conversation.session.header.corner。
+  assert.match(toolbar, /createPortal/);
+  assert.match(toolbar, /\[data-conversation-tabs\]/);
+  assert.ok(client.includes('createPortal'), '构建产物里应有 createPortal');
+});
+
+test('auto-expand opens every reasoning card, not just the turn', () => {
+  const card = readFileSync(resolve(root, 'src/client/ReasoningCard.tsx'), 'utf8');
+  // 「自动展开」等于每次都点「展开阅读」，所以必须驱动卡片自己的 expanded。
+  assert.match(card, /useState\(autoExpand\)/);
+  assert.match(card, /setExpanded\(autoExpand\)/);
+});
+
 test('auto-expand overrides auto-fold in the reader', () => {
   const reader = readFileSync(resolve(root, 'src/client/Reader.tsx'), 'utf8');
   assert.match(reader, /const expanded = !autoFold \|\| autoExpand \|\|/);

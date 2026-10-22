@@ -28,7 +28,8 @@ import { ClosedProcessSummary } from './ClosedProcessSummary.js';
 import { StickyLane } from './StickyLane.js';
 import type { ReaderGroup, TurnBoundary } from './projection.js';
 import type { BlockRenderProps, ReaderProps } from './types.js';
-import { ReaderToolbar, useReaderToolbar } from './ReaderToolbar.js';
+import { ReaderToolbar } from './ReaderToolbar.js';
+import { useReaderToolbar } from './use-reader-toolbar.js';
 import css from './Reader.module.css';
 import { markdownLabels, truncatedJsonLabel } from './primitive-labels.js';
 
@@ -162,7 +163,7 @@ const AssistantNode = memo(function AssistantNode({ useChat, nodeKey, boundary, 
     const last = index === parts.length - 1;
     return part.kind === 'reasoning'
     ? <ProcessFragment key={part.start} open={processOpen} motion={motion} onRead={onRead} returnFocusTo={returnFocusTo} nodeKey={nodeKey} framed>
-      <ReasoningCard step={data.step} active={processOpen && boundary.status === 'open' && data.step === boundary.latestStep} motion={motion} selected={pinned} onRead={onRead} autoFollow={render.autoFollow !== false}
+      <ReasoningCard step={data.step} active={processOpen && boundary.status === 'open' && data.step === boundary.latestStep} motion={motion} selected={pinned} onRead={onRead} autoFollow={render.autoFollow !== false} autoExpand={render.autoExpand === true}
         translationText={part.blocks.filter(block => block.kind === 'reasoning').map(block => block.text).join('\n\n')}
         translationLive={data.status === 'running' && last && data.blocks.at(-1)?.kind === 'reasoning'}
         translationSettings={render.translationSettings} original={render.reasoningOriginal} onToggleOriginal={render.toggleReasoningOriginal}>
@@ -573,6 +574,7 @@ const TurnGroup = memo(function TurnGroup({ group, motion, autoFold, autoExpand 
     reasoningOriginal,
     toggleReasoningOriginal,
     autoFollow,
+    autoExpand,
   };
   const terminal = terminalLabel(boundary.reason);
   const hasTurnError = flow.some(item => item.kind === 'node' && nodes.get(item.nodeKey)?.kind === 'turn-error');
@@ -842,9 +844,7 @@ export function Reader(props: ReaderProps) {
   return <StreamMotionContext.Provider value={streamMotion}><div ref={root} className={css.root} data-reader-build="0.3.7" data-dsh-better-display="0.3.7" data-reader-wait-clock-version="input-v1" data-reader-wait-start={waitAnchor.time ?? undefined} data-motion={motion ? 'on' : 'off'} data-reader-glass={frostedGlass || undefined} data-reader-auto-fold={autoFold ? 'on' : 'off'}>
     <TimelineRail items={timelineItems} activeTurn={activeTurn} busyTurn={busyTurn} onNavigate={onNavigateTurn} />
     <div className={css.column} data-chat-flow="">
-      <StickyLane kind="toolbar" className={css.toolbar}>
-        <ReaderToolbar {...toolbar} />
-      </StickyLane>
+      <ReaderToolbar {...toolbar} />
       {hasMore && <button type="button" className={css.historyButton} disabled={loadingOlder} onClick={async () => {
         setHistoryError(false);
         try { await props.loadOlder(); } catch { setHistoryError(true); }

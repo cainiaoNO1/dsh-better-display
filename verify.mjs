@@ -93,6 +93,7 @@ const profileRequire = createRequire(join(root, 'package.json'));
 const stubs = {
   react: await import('react'),
   'react/jsx-runtime': await import('react/jsx-runtime'),
+  'react-dom': await import('react-dom'),
 };
 for (const name of ['@deepseek-ai/dsh-client-store', '@deepseek-ai/dsh-client-ui-primitives']) {
   try {

@@ -31,6 +31,7 @@ const watch = process.argv.includes('--watch');
 const PLATFORM_EXTERNALS = [
   'react',
   'react/jsx-runtime',
+  'react-dom',
   '@deepseek-ai/dsh-client-store',
   '@deepseek-ai/dsh-client-ui-primitives',
 ];

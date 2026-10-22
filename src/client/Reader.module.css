@@ -682,7 +682,9 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  /* portal 挂进 tabs 行：margin-left:auto 把整组顶到最右，不挤占 tab 本身。 */
   margin-left: auto;
+  flex: none;
   overflow-x: auto;
   scrollbar-width: none;
   max-width: 100%;

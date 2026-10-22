@@ -8,10 +8,12 @@ import css from './Reader.module.css';
 const EASING = 'cubic-bezier(.22,1,.36,1)';
 
 /** One real transcript: reference transform while following, native scroll while reading. */
-export function ReasoningCard({ children, step, active, motion, selected, onRead, autoFollow = true, translationText = '', translationLive = false, translationSettings = TRANSLATION_OFF, original = false, onToggleOriginal }: {
+export function ReasoningCard({ children, step, active, motion, selected, onRead, autoFollow = true, autoExpand = false, translationText = '', translationLive = false, translationSettings = TRANSLATION_OFF, original = false, onToggleOriginal }: {
   children: ReactNode; step: number; active: boolean; motion: boolean; selected: boolean; onRead: () => void;
   /** 全局「自动跟随」开关；关掉后卡片停住，由用户自己滚。 */
   autoFollow?: boolean;
+  /** 全局「自动展开」开关；打开后每张卡片默认就是「展开阅读」的状态。 */
+  autoExpand?: boolean;
   /** 这段思考的纯文本，翻译用；与 children 同源。 */
   translationText?: string;
   /** 这段思考此刻是否仍在输出；只有正在输出才翻译，历史记录一律不翻。 */
@@ -25,7 +27,7 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
   const track = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const controls = useId();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(autoExpand);
   const [following, setFollowing] = useState(true);
   const [overflow, setOverflow] = useState(false);
   const [edges, setEdges] = useState('none');
@@ -280,6 +282,15 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
     return () => { window.clearTimeout(deadline); };
   }, [expanded, motion, selected]);
   useEffect(() => () => resize.current?.cancel(), []);
+
+  // 全局开关翻转时跟随它。用户手动点过展开/收起后，仍以开关的最新值为准 ——
+  // 因为开关的语义是「每次都像点了展开阅读」，不是「只展开一次」。
+  const lastAutoExpand = useRef(autoExpand);
+  useEffect(() => {
+    if (lastAutoExpand.current === autoExpand) return;
+    lastAutoExpand.current = autoExpand;
+    setExpanded(autoExpand);
+  }, [autoExpand]);
 
   const toggleReading = () => {
     // Resize the same transcript without changing follow intent or position.
