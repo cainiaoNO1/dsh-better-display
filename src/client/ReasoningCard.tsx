@@ -8,12 +8,16 @@ import css from './Reader.module.css';
 const EASING = 'cubic-bezier(.22,1,.36,1)';
 
 /** One real transcript: reference transform while following, native scroll while reading. */
-export function ReasoningCard({ children, step, active, motion, selected, onRead, autoFollow = true, autoExpand = false, translationText = '', translationLive = false, translationSettings = TRANSLATION_OFF, original = false, onToggleOriginal }: {
+export function ReasoningCard({ children, step, active, motion, selected, onRead, autoFollow = true, autoExpand = false, cardExpanded, onToggleExpand, translationText = '', translationLive = false, translationSettings = TRANSLATION_OFF, original = false, onToggleOriginal }: {
   children: ReactNode; step: number; active: boolean; motion: boolean; selected: boolean; onRead: () => void;
   /** 全局「自动跟随」开关；关掉后卡片停住，由用户自己滚。 */
   autoFollow?: boolean;
   /** 全局「自动展开」开关；打开后每张卡片默认就是「展开阅读」的状态。 */
   autoExpand?: boolean;
+  /** 当前卡片被用户手动展开的状态；一旦展开，不再自动压缩/折叠，直到用户点击收起。 */
+  cardExpanded?: boolean;
+  /** 展开/收起切换回调。 */
+  onToggleExpand?: (expanded: boolean) => void;
   /** 这段思考的纯文本，翻译用；与 children 同源。 */
   translationText?: string;
   /** 这段思考此刻是否仍在输出；只有正在输出才翻译，历史记录一律不翻。 */
@@ -27,7 +31,8 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
   const track = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const controls = useId();
-  const [expanded, setExpanded] = useState(autoExpand);
+  const [expandedState, setExpanded] = useState(autoExpand);
+  const expanded = cardExpanded !== undefined ? cardExpanded : expandedState;
   const [following, setFollowing] = useState(true);
   const [overflow, setOverflow] = useState(false);
   const [edges, setEdges] = useState('none');
@@ -296,7 +301,9 @@ export function ReasoningCard({ children, step, active, motion, selected, onRead
     // Resize the same transcript without changing follow intent or position.
     // Wheel, selection and viewport focus still explicitly pause following.
     onRead();
-    setExpanded(value => !value);
+    const next = !expanded;
+    setExpanded(next);
+    onToggleExpand?.(next);
   };
 
   const [localOriginal, setLocalOriginal] = useState<boolean | undefined>(undefined);

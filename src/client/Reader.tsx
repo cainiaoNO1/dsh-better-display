@@ -161,9 +161,12 @@ const AssistantNode = memo(function AssistantNode({ useChat, nodeKey, boundary, 
   return <>{visible.map(part => {
     const index = parts.findIndex(item => item.start === part.start);
     const last = index === parts.length - 1;
+    const stepKey = `${nodeKey}:${part.kind}:${part.start}`;
     return part.kind === 'reasoning'
     ? <ProcessFragment key={part.start} open={processOpen} motion={motion} onRead={onRead} returnFocusTo={returnFocusTo} nodeKey={nodeKey} framed>
       <ReasoningCard step={data.step} active={processOpen && boundary.status === 'open' && data.step === boundary.latestStep} motion={motion} selected={pinned} onRead={onRead} autoFollow={render.autoFollow !== false} autoExpand={render.autoExpand === true}
+        cardExpanded={render.userExpandedKeys?.[stepKey]}
+        onToggleExpand={render.onToggleStepExpand ? (expanded => render.onToggleStepExpand!(stepKey, expanded)) : undefined}
         translationText={part.blocks.filter(block => block.kind === 'reasoning').map(block => block.text).join('\n\n')}
         translationLive={data.status === 'running' && last && data.blocks.at(-1)?.kind === 'reasoning'}
         translationSettings={render.translationSettings} original={render.reasoningOriginal} onToggleOriginal={render.toggleReasoningOriginal}>
@@ -495,7 +498,19 @@ const TurnGroup = memo(function TurnGroup({ group, motion, autoFold, autoExpand 
   const mainKeys = startsWithUser ? group.keys.slice(1) : group.keys;
   const flow = useMemo(() => readerFlow({ ...group, keys: mainKeys }, turn, key => nodes.get(key)), [nodes, group, mainKeys, turn]);
   const steps = useMemo(() => segmentLiveTurn(flow, key => nodes.get(key)), [flow, nodes]);
-  const liveItems = useMemo(() => presentLiveTurn(steps, boundary, autoFold), [steps, boundary, autoFold]);
+  const [userExpandedKeys, setUserExpandedKeys] = useState<Record<string, boolean>>({});
+  const onToggleStepExpand = useCallback((stepKey: string, value: boolean) => {
+    setUserExpandedKeys(current => {
+      if (value) return { ...current, [stepKey]: true };
+      const copy = { ...current };
+      delete copy[stepKey];
+      return copy;
+    });
+  }, []);
+  const liveItems = useMemo(
+    () => presentLiveTurn(steps, boundary, autoFold, userExpandedKeys),
+    [steps, boundary, autoFold, userExpandedKeys],
+  );
   const openMode = deliverableOpenModeOf(useSyncExternalStore(
     props.openPrefs?.subscribe ?? ((fn: () => void) => { void fn; return () => {}; }),
     () => props.openPrefs?.getSnapshot()?.deliverableOpenMode,
@@ -554,9 +569,9 @@ const TurnGroup = memo(function TurnGroup({ group, motion, autoFold, autoExpand 
     const captured = new Map(group.keys.flatMap(key => {
       const node = nodes.get(key); return node ? [[key, node] as const] : [];
     }));
-    return { items: holdingSelection ? presentLiveTurn(steps, boundary, false) : liveItems,
+    return { items: holdingSelection ? presentLiveTurn(steps, boundary, false, userExpandedKeys) : liveItems,
       snapshot: { ...snapshot, nodes: { ...nodes, get: (key: string) => captured.get(key), values: () => [...captured.values()] } } };
-  }, [snapshot, nodes, group, steps, boundary, liveItems, holdingSelection]);
+  }, [snapshot, nodes, group, steps, boundary, liveItems, holdingSelection, userExpandedKeys]);
   const shared = {
     useChat: useFlowChat,
     renderSlotChain: props.renderSlotChain,
@@ -575,6 +590,8 @@ const TurnGroup = memo(function TurnGroup({ group, motion, autoFold, autoExpand 
     toggleReasoningOriginal,
     autoFollow,
     autoExpand,
+    userExpandedKeys,
+    onToggleStepExpand,
   };
   const terminal = terminalLabel(boundary.reason);
   const hasTurnError = flow.some(item => item.kind === 'node' && nodes.get(item.nodeKey)?.kind === 'turn-error');

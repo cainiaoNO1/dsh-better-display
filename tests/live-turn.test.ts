@@ -216,3 +216,31 @@ test('disabling auto-fold keeps all steps open as plain streaming steps', () => 
   assert.deepEqual(items.map(item => item.key), ['1', '2', '3', '4', '5', '6']);
   assert.deepEqual(items.map(item => item.kind), ['open', 'open', 'open', 'open', 'open', 'open']);
 });
+
+test('presentLiveTurn keeps user-expanded steps open and prevents them from auto-folding', () => {
+  const steps = [reasoning('1'), body('2'), tool('3'), reasoning('4')];
+  // Default: steps 1, 2, 3 fold into fold item, step 4 is open
+  const defaultFolded = presentLiveTurn(steps, open, true);
+  assert.equal(defaultFolded[0]?.kind, 'fold');
+  assert.deepEqual(defaultFolded[0]?.steps.map(s => s.key), ['1', '2', '3']);
+
+  // User explicitly expanded reasoning('1') via 「展开阅读」:
+  const withExpanded = presentLiveTurn(steps, open, true, { '1': true });
+  // '1' stays open on screen outside the fold summary!
+  const openKeys = withExpanded.filter(item => item.kind === 'open').map(item => item.key);
+  assert.ok(openKeys.includes('1'), 'manually expanded step 1 must remain open');
+  assert.ok(openKeys.includes('4'), 'step 4 is open');
+
+  const foldItem = withExpanded.find(item => item.kind === 'fold');
+  assert.ok(foldItem, 'remaining steps 2 and 3 fold into summary');
+  assert.deepEqual(foldItem?.steps.map(s => s.key), ['2', '3']);
+
+  // User cancels expand (clicking 「收起」): step 1 can fold again
+  const afterCancel = presentLiveTurn(steps, open, true, {});
+  assert.deepEqual(afterFoldKeys(afterCancel), ['1', '2', '3']);
+});
+
+function afterFoldKeys(items: ReturnType<typeof presentLiveTurn>) {
+  const fold = items.find(item => item.kind === 'fold');
+  return fold?.steps.map(s => s.key) ?? [];
+}

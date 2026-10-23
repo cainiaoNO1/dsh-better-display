@@ -167,10 +167,17 @@ function toolSummary(entry: ToolActivityEntry): string {
   }
 }
 
-export function presentLiveTurn(steps: readonly LiveStep[], boundary: TurnBoundary, autoFold = true): LiveTurnItem[] {
+export function presentLiveTurn(
+  steps: readonly LiveStep[],
+  boundary: TurnBoundary,
+  autoFold = true,
+  userExpandedKeys?: Readonly<Record<string, boolean>>,
+): LiveTurnItem[] {
   const live = autoFold && liveFoldEnabled(boundary);
   const items: LiveTurnItem[] = [];
   let chain: LiveStep[] = [];
+  const isUserExpanded = (step: LiveStep) => userExpandedKeys?.[step.key] === true;
+
   const flush = () => {
     if (!chain.length) return;
     if (!live) {
@@ -180,7 +187,21 @@ export function presentLiveTurn(steps: readonly LiveStep[], boundary: TurnBounda
     }
     const { fold, open } = splitChain(chain);
     if (fold?.length) {
-      items.push({ kind: 'fold', key: `live-fold:${chain[0]!.key}`, steps: fold, summary: foldSummary(fold) });
+      const realFold: LiveStep[] = [];
+      const keptOpen: LiveStep[] = [];
+      for (const step of fold) {
+        if (isUserExpanded(step)) {
+          keptOpen.push(step);
+        } else {
+          realFold.push(step);
+        }
+      }
+      if (realFold.length) {
+        items.push({ kind: 'fold', key: `live-fold:${realFold[0]!.key}`, steps: realFold, summary: foldSummary(realFold) });
+      }
+      for (const step of keptOpen) {
+        items.push({ kind: 'open', key: step.key, step });
+      }
     }
     for (const step of open) items.push({ kind: 'open', key: step.key, step });
     chain = [];

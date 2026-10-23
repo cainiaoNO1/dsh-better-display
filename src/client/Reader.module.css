@@ -340,7 +340,7 @@
   scrollbar-width: thin;
   scrollbar-color: var(--dsw-alias-border-l1) transparent;
 }
-.reasonCard[data-expanded=true] .reasonViewport { max-height: min(60vh, 560px, var(--reason-reading-height, 560px)); }
+.reasonCard[data-expanded=true] .reasonViewport { max-height: min(80vh, 800px, var(--reason-reading-height, 800px)); }
 .reasonViewport[data-edges=both], .reasonCard[data-following=true][data-overflow=true] .reasonViewport {
   -webkit-mask-image: linear-gradient(transparent 0, black var(--reason-fade), black calc(100% - var(--reason-fade)), transparent 100%);
   mask-image: linear-gradient(transparent 0, black var(--reason-fade), black calc(100% - var(--reason-fade)), transparent 100%);

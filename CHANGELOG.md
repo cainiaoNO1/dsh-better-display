@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.12 — 2026-10-23
+
+- Pin reasoning cards when explicitly expanded: clicking 「展开阅读」 on any reasoning card now keeps it open and prevents it from being automatically folded/compressed into the summary row (`思考×...`) by auto-fold as subsequent steps arrive, until the user cancels expand by clicking 「收起」.
+- Relax expanded reasoning card viewport height cap to 800px / 80vh for comfortable reading.
+
 ## 0.3.11 — 2026-10-23
 
 - Add manual 「翻译」 text button to untranslated English reasoning cards (such as cards generated before switching into the session or historical steps).

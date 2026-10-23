@@ -101,6 +101,10 @@ export type BlockRenderProps = Pick<ReaderProps, 'renderSlotChain' | 'loadImage'
   autoFollow?: boolean;
   /** 全局「自动展开」开关；打开后思考卡片默认就是展开态。 */
   autoExpand?: boolean;
+  /** 用户显式手动展开的步骤集合，防止被自动折叠。 */
+  userExpandedKeys?: Readonly<Record<string, boolean>>;
+  /** 切换特定步骤的手动展开状态。 */
+  onToggleStepExpand?: (stepKey: string, expanded: boolean) => void;
   metrics?: {
     usage?: NonNullable<import('@deepseek-ai/dsh-client-ui-chat/client').TurnTailChatData['tokenUsage']>;
     runMs?: number;
