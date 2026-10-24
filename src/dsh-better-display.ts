@@ -9,6 +9,11 @@ import {
   translateReasoning,
   type LlmFace,
 } from './translate.js';
+import {
+  loadPersistentConfig,
+  savePersistentConfig,
+  type BetterDisplayPersistentConfig,
+} from './persistent-config.js';
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -188,11 +193,35 @@ export function apply(ctx: Context): void {
           }
         },
       });
+      // 宿主端持久化配置（重启 dsh web、换端口或清除本地缓存不丢配置）
+      const disposeConfig = ctx.webServer!.register({
+        kind: 'exact',
+        path: '/better-display/config',
+        handler: async (req, res) => {
+          if (req.method === 'GET') {
+            writeJson(res, 200, { ok: true, config: loadPersistentConfig() });
+            return;
+          }
+          if (req.method === 'POST') {
+            try {
+              const body = await readJsonBody(req) as Partial<BetterDisplayPersistentConfig>;
+              const saved = savePersistentConfig(body);
+              writeJson(res, 200, { ok: true, config: saved });
+            } catch (err) {
+              writeJson(res, 400, { ok: false, error: String(err) });
+            }
+            return;
+          }
+          res.statusCode = 405;
+          res.end();
+        },
+      });
       return () => {
         disposeReveal();
         disposeSkill();
         disposeTranslate();
         disposeModels();
+        disposeConfig();
       };
     }, 'dsh-better-display: reveal, skill-status and translation routes');
   }

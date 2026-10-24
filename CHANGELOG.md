@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.13 — 2026-10-24
+
+- Persist plugin preferences to host disk (`~/.dsh/dsh-better-display/config.json`) via `/better-display/config` routes:
+  - Fixes translation switch automatically turning off after `dsh web` restarts, port changes (3080/3090), or browser storage clearing.
+  - Browser automatically rehydrates from host config on startup and writes changes back to disk.
+  - Automatically selects recommended DeepSeek Flash model when opening translation if no model route was chosen yet.
+
 ## 0.3.12 — 2026-10-23
 
 - Pin reasoning cards when explicitly expanded: clicking 「展开阅读」 on any reasoning card now keeps it open and prevents it from being automatically folded/compressed into the summary row (`思考×...`) by auto-fold as subsequent steps arrive, until the user cancels expand by clicking 「收起」.

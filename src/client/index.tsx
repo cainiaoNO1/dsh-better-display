@@ -12,6 +12,7 @@ import { Reader } from './Reader.js';
 import { createReaderStore } from './store.js';
 import { installReaderEntry } from './entry.js';
 import { installBetterDisplaySettings } from './settings.js';
+import { rehydrateFromHost, syncConfigToHost } from './sync-config.js';
 import { fillComposerDom } from './mcp-app.js';
 import { fileAddressFor, modeFromSnapshot, openDeliverableFile } from './open-file.js';
 import type { ReaderInjected } from './types.js';
@@ -63,6 +64,8 @@ export function apply(ctx: Context): void {
   // `dsh.reader.v1.<sessionId>`. One root instance keeps glass, fold
   // intensity, and open-mode on the unsuffixed `dsh.reader.v1` key.
   const prefs = store.create();
+  rehydrateFromHost(prefs);
+  syncConfigToHost(prefs);
   installBetterDisplaySettings(ctx, prefs);
   ctx.slots.inject('conversation.chat.node', function* () {
     yield ctx.slots.register({

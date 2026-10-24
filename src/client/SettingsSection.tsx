@@ -3,6 +3,7 @@ import { foldIntensityOf, frostedGlassOf, type FoldIntensity } from './fold-inte
 import { deliverableOpenModeOf, type DeliverableOpenMode } from './open-file.js';
 import { settingsCopyFor, type SettingsCopy, type SettingsCopyKey } from './settings-copy.js';
 import { CONVENTIONAL_SKILL_ROOTS, detectGenerativeMcpappsSkill, shortestInstallCommand, type SkillStatusProbe, type SkillStatusSnapshot } from './skill-status.js';
+import { findDefaultModel, type ModelRoute } from './model-route.js';
 import css from './SettingsSection.module.css';
 
 export interface ReaderPrefsSnapshot {
@@ -44,13 +45,6 @@ export interface BetterDisplaySettingsInjected {
   copy?: SettingsCopy;
   languageTag?: string;
   checkSkill: SkillStatusProbe;
-}
-
-/** 宿主 `/better-display/translation-models` 的响应形状。 */
-interface ModelRoute {
-  id: string;
-  name: string;
-  models: { id: string; name: string }[];
 }
 
 type SettingsProps = BetterDisplaySettingsInjected & {
@@ -117,7 +111,14 @@ export function SettingsSection(props: SettingsProps) {
       const response = await fetch('/better-display/translation-models');
       const payload = await response.json() as { ok?: boolean; providers?: ModelRoute[]; error?: string };
       if (!response.ok || !payload?.ok) throw new Error(payload?.error ?? `HTTP ${response.status}`);
-      setRoutes(payload.providers ?? []);
+      const list = payload.providers ?? [];
+      setRoutes(list);
+      if (!translatorProvider || !translatorModel) {
+        const found = findDefaultModel(list);
+        if (found) {
+          props.prefs.actions.setTranslatorRoute?.(found);
+        }
+      }
     } catch (error) {
       setRoutes(undefined);
       setRouteError(error instanceof Error ? error.message : String(error));
