@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.14 — 2026-10-24
+
+- Remove `position: sticky` and opaque background shadow from process summary rows (`思考·工具·记录`):
+  - Summary rows now stay in normal document flow and scroll naturally with the page, completely eliminating the issue where sticky summary rows covered the thinking card's frosted glass frame, top border, and header controls.
+  - Adds clean vertical margin between the summary line and the reasoning card below it.
+
 ## 0.3.13 — 2026-10-24
 
 - Persist plugin preferences to host disk (`~/.dsh/dsh-better-display/config.json`) via `/better-display/config` routes:

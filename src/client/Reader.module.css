@@ -324,6 +324,8 @@
   border-radius: 12px;
   background: var(--dsw-alias-bg-module-platform);
   scroll-margin-block: 16px calc(var(--dsh-composer-height, 152px) + 16px);
+  margin-top: 6px;
+  margin-bottom: 12px;
 }
 .reasonHeading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 16px 0; color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 20px; font-variant-numeric: tabular-nums; }
 .reasonCard[data-overflow=false][data-expanded=false] { border-color: transparent; border-radius: 0; background: transparent; }
@@ -550,14 +552,13 @@
    it too. The toolbar is z-index 7, above the lane's 6, so its buttons still
    render on top of the extension. */
 .turnProcessSticky { box-shadow: 0 -14px 0 var(--dsw-alias-bg-base), var(--reader-control-width, 148px) 0 0 var(--dsw-alias-bg-base); }
-/* The same summary row stays in flow until it reaches the measured top lane. */
-.flowCell[data-flow-summary], .closedProcessSummary { position: sticky; top: calc(max(var(--reader-toolbar-height, 40px), var(--reader-status-height, 40px)) + var(--reader-sticky-lane, 40px)); z-index: 5; overflow: visible; box-sizing: border-box; min-height: 40px; padding-block: 4px; background: var(--dsw-alias-bg-base); border-bottom: 0; }
-.flowCell[data-flow-summary] { box-shadow: 0 -16px 0 var(--dsw-alias-bg-base); }
-.closedProcessSummary { box-shadow: 0 -14px 0 var(--dsw-alias-bg-base); }
+/* 过程摘要行（思考·工具·记录）：随文档正常滚动，绝不 position: sticky。
+   粘性吸顶会导致页面下滚时固定在屏幕上方，直接盖住下方思考卡片的玻璃边框与「思考」标题。 */
+.flowCell[data-flow-summary], .closedProcessSummary { position: relative; z-index: 1; overflow: visible; box-sizing: border-box; min-height: 36px; padding-block: 4px; margin-bottom: 8px; background: transparent; border-bottom: 0; }
 .foldControl { display: inline-flex; align-items: center; gap: 0; padding: 2px; border-radius: 8px; background: var(--dsw-alias-bg-module-platform); }
 .foldStop { border: 0; background: transparent; color: var(--dsw-alias-label-secondary); padding: 2px 8px; border-radius: 6px; white-space: nowrap; font: inherit; font-size: 12px; line-height: 18px; cursor: pointer; }
 .foldStop[data-on] { background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); }
-.flowCell[data-flow-summary] > .flowCellInner { padding-bottom: 0; }
+.flowCell[data-flow-summary] > .flowCellInner { padding-bottom: 4px; }
 .flowCell[data-flow-summary] .disclosureButton, .closedProcessSummary .disclosureButton { width: auto; max-width: 100%; }
 .flowCell[data-flow-summary] .foldSummary, .closedProcessSummary .foldSummary { min-width: 0; }
 .turnProcessSticky > .disclosure { flex: 1 1 auto; min-width: 0; }

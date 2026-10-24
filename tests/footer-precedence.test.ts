@@ -23,8 +23,6 @@ const HOST_FOOTER_Z = 7;
 const CLAMPED_LANES = [
   '.turnProcessSticky',
   '.liveFoldContainer',
-  '.flowCell[data-flow-summary]',
-  '.closedProcessSummary',
 ];
 
 /** The one lane allowed at 7: it pins to the scrollport's first lane and can never reach the band. */
@@ -94,9 +92,9 @@ test('the live status lane pins below the toolbar lane instead of over it', () =
   );
 });
 
-test('the closed summary lane shares that same measured lane', () => {
+test('the process summary row is in normal flow and does not sticky-clamp over reasoning cards', () => {
   const declarations = mergedDeclarations(css, '.flowCell[data-flow-summary]');
-  assert.match(declarations.get('top') ?? '', /var\(--reader-toolbar-height/);
+  assert.equal(declarations.get('position'), 'relative');
 });
 
 test('skin mode does not reintroduce a lane above the footer band', () => {
