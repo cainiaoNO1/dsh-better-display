@@ -38,3 +38,7 @@ desktop.ini
 *.tar.gz
 tmp/
 temp/
+
+# GitHub Token & Local Env
+.github_token
+.token
