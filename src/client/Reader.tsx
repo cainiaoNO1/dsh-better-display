@@ -168,7 +168,7 @@ const AssistantNode = memo(function AssistantNode({ useChat, nodeKey, boundary, 
         cardExpanded={render.userExpandedKeys?.[stepKey]}
         onToggleExpand={render.onToggleStepExpand ? (expanded => render.onToggleStepExpand!(stepKey, expanded)) : undefined}
         translationText={part.blocks.filter(block => block.kind === 'reasoning').map(block => block.text).join('\n\n')}
-        translationLive={data.status === 'running' && last && data.blocks.at(-1)?.kind === 'reasoning'}
+        translationLive={boundary.status === 'open' || data.status === 'running'}
         translationSettings={render.translationSettings} original={render.reasoningOriginal} onToggleOriginal={render.toggleReasoningOriginal}>
         <Blocks {...render} blocks={part.blocks} streaming={data.status === 'running' && last && data.blocks.at(-1)?.kind === 'reasoning'}
           holdFormatting={pinned} startedAt={data.time} interrupted={data.status === 'interrupted'} liveText />

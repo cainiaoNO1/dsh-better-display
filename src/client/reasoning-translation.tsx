@@ -191,6 +191,20 @@ export function useReasoningTranslation(
 
   const pump = useCallback(() => {
     const now = latest.current;
+    const clipped = clipForTranslation(now.text, now.maxChars);
+    const partial = clipped.length < now.text.length;
+
+    // 1. 如果缓存中已有此段译文，直接取用并显示，避免任何由于组件重挂载或状态抖动导致的闪回「未翻译」
+    if (now.enabled && now.provider && now.model) {
+      const key = translationCacheKey(now.provider, now.model, clipped, now.prompt);
+      const cached = cache.get(key);
+      if (cached !== undefined) {
+        settled.current = { clipped, translated: cached, partial };
+        setState({ status: 'done', text: cached, partial });
+        return;
+      }
+    }
+
     if (!now.translatable) {
       settled.current = undefined;
       lastSentClipped.current = '';
@@ -205,8 +219,6 @@ export function useReasoningTranslation(
       }
       return;
     }
-    const clipped = clipForTranslation(now.text, now.maxChars);
-    const partial = clipped.length < now.text.length;
     // 这段文本已经有译文了：直接显示，不必再发请求。
     const done = settled.current;
     if (done && done.clipped === clipped) {
@@ -216,13 +228,6 @@ export function useReasoningTranslation(
     // 有请求在飞就等它回来，回来后会再 pump 一次追上更新的文本。
     if (inFlight.current) return;
 
-    const key = translationCacheKey(now.provider, now.model, clipped, now.prompt);
-    const cached = cache.get(key);
-    if (cached !== undefined) {
-      settled.current = { clipped, translated: cached, partial };
-      setState({ status: 'done', text: cached, partial });
-      return;
-    }
     if (clipped === lastSentClipped.current) return;
 
     // 冷却期没过就排个定时器；手动触发或输出已结束（!live）时不再等待。
@@ -237,6 +242,7 @@ export function useReasoningTranslation(
       return;
     }
 
+    const key = translationCacheKey(now.provider, now.model, clipped, now.prompt);
     const controller = new AbortController();
     inFlight.current = { controller, clipped };
     lastSentAt.current = Date.now();

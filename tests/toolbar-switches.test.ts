@@ -78,3 +78,16 @@ test('reasoning card provides manual translate button when untranslated', () => 
   assert.match(card, /translation\.trigger\(\)/);
   assert.match(card, /needsTranslation\(translationText\)/);
 });
+
+test('reader marks reasoning live whenever the turn is open or assistant is running', () => {
+  const reader = readFileSync(resolve(root, 'src/client/Reader.tsx'), 'utf8');
+  assert.match(reader, /translationLive=\{boundary\.status === 'open' \|\| data\.status === 'running'\}/);
+});
+
+test('reasoning translation checks cache before checking translatable', () => {
+  const hook = readFileSync(resolve(root, 'src/client/reasoning-translation.tsx'), 'utf8');
+  const cacheIndex = hook.indexOf('cache.get(key)');
+  const translatableIndex = hook.indexOf('if (!now.translatable)');
+  assert.ok(cacheIndex !== -1 && translatableIndex !== -1);
+  assert.ok(cacheIndex < translatableIndex, 'cached translation must be returned before bailing out on !now.translatable');
+});

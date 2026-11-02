@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.15 — 2026-11-02
+
+- Fix reasoning cards in active open turns occasionally failing to auto-translate:
+  - Widen live translation detection to `boundary.status === 'open' || data.status === 'running'`, ensuring ongoing turns (including during tool execution or fast multi-block responses) are reliably treated as live.
+  - Check in-memory translation cache before bailing out on `!now.translatable`, preventing already translated cards from reverting to untranslated upon component remount or state updates.
+
 ## 0.3.14 — 2026-10-24
 
 - Remove `position: sticky` and opaque background shadow from process summary rows (`思考·工具·记录`):
